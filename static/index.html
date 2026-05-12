@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Classroom IO Game</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <main class="home">
+    <h1>Classroom <span class="accent">IO</span> Game</h1>
+    <p class="lede">A multiplayer arena where everyone codes their own character.</p>
+
+    <div class="cards">
+      <a class="card" href="/student">
+        <h2>I'm a Student</h2>
+        <p>Edit your character in the browser, test it, and join the arena.</p>
+      </a>
+      <a class="card" href="/game">
+        <h2>Watch / Quick Join</h2>
+        <p>Open the arena. (You'll be asked for a name and character.)</p>
+      </a>
+      <a class="card" href="/teacher">
+        <h2>I'm the Teacher</h2>
+        <p>See connected players and useful info.</p>
+      </a>
+    </div>
+
+    <p class="footer">
+      Read the <a href="/manual">Power Manual</a> for every cast type and effect,
+      or browse <a href="/challenges">Challenge cards</a> for design ideas.<br>
+      Tip for teachers: print your LAN IP with
+      <code>python scripts/print_lan_ip.py</code>.
+    </p>
+  </main>
+</body>
+</html>

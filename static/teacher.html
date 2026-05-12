@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Teacher · Classroom IO Game</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <main class="page">
+    <h1>Teacher dashboard</h1>
+    <p>Paste your <strong>teacher token</strong> (printed once when the server
+       started). It is kept in this browser tab only — refreshing keeps it.</p>
+
+    <section class="panel">
+      <label>Teacher token <input id="token" type="password" placeholder="paste token" /></label>
+      <button class="tbtn" onclick="saveToken()">Save</button>
+      <span id="tokStatus"></span>
+    </section>
+
+    <section class="panel">
+      <h2>Match controls</h2>
+      <label>Round length (sec)
+        <input id="dur" type="number" value="120" min="20" max="900" style="max-width: 100px" />
+      </label>
+      <div>
+        <button class="tbtn" onclick="api('start_round', {durationSec: +dur.value})">Start round</button>
+        <button class="tbtn" onclick="api('end_round')">End round</button>
+        <button class="tbtn" onclick="api('reset')">Reset arena</button>
+        <button class="tbtn" onclick="api('clear_projectiles')">Clear projectiles</button>
+        <label style="display:inline-block; margin-left:12px;">
+          <input id="safeMode" type="checkbox" onchange="api('safe_mode', {enabled: this.checked})" />
+          Safe mode (approve every join)
+        </label>
+      </div>
+    </section>
+
+    <div class="tdash-grid">
+      <section class="panel">
+        <h2>Live scoreboard <span id="matchInfo" style="color:var(--muted);font-size:14px;font-weight:400;"></span></h2>
+        <table class="scoreboard">
+          <thead><tr><th>#</th><th>Name</th><th>Character</th><th>K</th><th>D</th><th>Score</th><th></th></tr></thead>
+          <tbody id="scoreBody"><tr><td colspan="7" style="color:var(--muted)">no players yet</td></tr></tbody>
+        </table>
+      </section>
+
+      <section class="panel">
+        <h2>Pending approvals</h2>
+        <div id="pending" style="font-size:14px"><em>safe mode is off — joins are automatic.</em></div>
+      </section>
+    </div>
+
+    <section class="panel">
+      <h2>Server</h2>
+      <pre id="healthOut" style="margin:0">loading…</pre>
+    </section>
+
+    <p class="footer"><a href="/game">Open spectator view</a> · <a href="/">Home</a></p>
+  </main>
+
+  <script>
+    const dur = document.getElementById('dur');
+    function getToken() { return localStorage.getItem('iog.teacher.token') || ''; }
+    function saveToken() {
+      const v = document.getElementById('token').value.trim();
+      if (v) localStorage.setItem('iog.teacher.token', v);
+      document.getElementById('tokStatus').textContent = v ? ' saved' : '';
+      refresh();
+    }
+    document.getElementById('token').value = getToken();
+
+    async function api(path, body) {
+      const r = await fetch('/api/teacher/' + path, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-Teacher-Token': getToken()},
+        body: JSON.stringify(body || {}),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) alert('Error: ' + (j.detail || r.statusText));
+      refresh();
+    }
+
+    async function approve(pid, ok) {
+      await api('approve', {pendingId: pid, approved: ok});
+    }
+
+    async function kick(pid) {
+      if (!confirm('Kick this player?')) return;
+      await api('kick', {pid});
+    }
+
+    async function refresh() {
+      try {
+        const tok = getToken();
+        const r = await fetch('/api/teacher/state?token=' + encodeURIComponent(tok));
+        if (!r.ok) {
+          document.getElementById('healthOut').textContent = 'auth required (paste token)';
+          return;
+        }
+        const j = await r.json();
+        const m = j.match;
+        document.getElementById('matchInfo').textContent =
+          ` — ${m.status} (round #${m.id}, ${m.remaining}s left, ${j.players.length} players)`;
+        document.getElementById('safeMode').checked = !!m.safeMode;
+
+        const tbody = document.getElementById('scoreBody');
+        const rows = m.scoreboard;
+        if (!rows.length) {
+          tbody.innerHTML = '<tr><td colspan="7" style="color:var(--muted)">no players yet</td></tr>';
+        } else {
+          tbody.innerHTML = rows.map((r, i) =>
+            `<tr><td>${i+1}</td>
+                 <td><span class="swatch" style="background:${r.color}"></span>${escape(r.username)}</td>
+                 <td>${escape(r.characterName)}</td>
+                 <td>${r.kills}</td><td>${r.deaths}</td><td>${r.score}</td>
+                 <td><button class="tbtn danger" onclick="kick('${r.pid}')">Kick</button></td></tr>`
+          ).join('');
+        }
+
+        const pending = j.pending || [];
+        const pdiv = document.getElementById('pending');
+        if (m.safeMode && pending.length === 0) {
+          pdiv.innerHTML = '<em>no pending joins</em>';
+        } else if (!m.safeMode) {
+          pdiv.innerHTML = '<em>safe mode is off — joins are automatic.</em>';
+        } else {
+          pdiv.innerHTML = pending.map(p => {
+            const total = p.report ? p.report.total : '?';
+            const warns = p.report ? (p.report.warnings || []) : [];
+            return `<div class="panel" style="margin:6px 0">
+              <strong>${escape(p.username)}</strong> as
+              "${escape(p.manifestDump.characterName)}" — cost ${total}/100
+              <div>
+                <button class="tbtn" onclick="approve('${p.pendingId}', true)">Approve</button>
+                <button class="tbtn danger" onclick="approve('${p.pendingId}', false)">Reject</button>
+              </div>
+              ${warns.length ? '<ul>' + warns.map(w => '<li>' + escape(w) + '</li>').join('') + '</ul>' : ''}
+            </div>`;
+          }).join('');
+        }
+
+        const hr = await fetch('/api/health');
+        document.getElementById('healthOut').textContent = JSON.stringify(await hr.json(), null, 2);
+      } catch (e) {
+        document.getElementById('healthOut').textContent = 'error: ' + e;
+      }
+    }
+    function escape(s) {
+      return String(s).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\'':'&#39;','"':'&quot;'}[c]));
+    }
+    refresh();
+    setInterval(refresh, 1500);
+  </script>
+</body>
+</html>

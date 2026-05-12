@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Student Editor · Classroom IO Game</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <main class="page editor">
+    <h1>Build your character</h1>
+    <p>Edit the JavaScript below. Your <code>buildCharacter()</code> function
+       must return an object describing your character. Click
+       <strong>Run &amp; Validate</strong>, then <strong>Join Game</strong>.</p>
+    <p>New here? Read the <a href="/manual">Power Manual</a> first — it lists
+       every cast kind and effect with examples. Try a
+       <a href="/challenges">challenge card</a> for inspiration.</p>
+
+    <div class="editor-grid">
+      <section class="panel">
+        <label for="username">Your name</label>
+        <input id="username" type="text" maxlength="24" placeholder="e.g. ada" />
+
+        <label for="example">Load example</label>
+        <select id="example">
+          <option value="boilerplate">Boilerplate (start here)</option>
+          <option value="fire_wizard">Fire Wizard (projectile + DoT)</option>
+          <option value="ice_tank">Ice Tank (slow + shield)</option>
+          <option value="medic">Medic (heal + heal-area)</option>
+          <option value="rogue">Rogue (dash + melee + stun)</option>
+        </select>
+
+        <label for="code">character.js</label>
+        <textarea id="code" spellcheck="false"></textarea>
+
+        <div class="row">
+          <button id="runBtn" type="button">Run &amp; Validate</button>
+          <button id="joinBtn" type="button" disabled>Join Game</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Result</h2>
+        <pre id="output">Click "Run &amp; Validate" to test your code.</pre>
+        <div id="report" class="report" hidden>
+          <h2>Balance report</h2>
+          <div class="budget-bar"><div id="budgetFill"></div></div>
+          <p id="budgetSummary"></p>
+          <h3>Stat costs</h3>
+          <ul id="statCosts"></ul>
+          <h3>Power costs</h3>
+          <ul id="powerCosts"></ul>
+          <h3>Warnings</h3>
+          <ul id="warnings"></ul>
+          <h3>Build feel (rough)</h3>
+          <ul id="metrics"></ul>
+        </div>
+        <h2>Tips</h2>
+        <ul class="tips">
+          <li>Your function must be named <code>buildCharacter</code>.</li>
+          <li>It must return an object with these fields:
+            <code>characterName</code>, <code>color</code>, <code>size</code>,
+            <code>speed</code>, <code>maxHealth</code>, <code>powers</code>.
+          </li>
+          <li>Each power has a <code>name</code>, a <code>key</code> to press,
+            a <code>cooldownMs</code>, and a <code>cast</code> object.</li>
+          <li><code>cast.kind</code> is one of: <code>projectile</code>,
+            <code>area</code>, <code>melee</code>, <code>dash</code>,
+            <code>shield</code>, or <code>heal</code>.</li>
+          <li>See the <a href="/manual">Power Manual</a> for every field and
+            its allowed range.</li>
+          <li>Press <code>WASD</code> or arrow keys to move; press your
+            power's <code>key</code> to fire.</li>
+        </ul>
+      </section>
+    </div>
+
+    <p class="footer"><a href="/">&larr; Home</a></p>
+  </main>
+
+  <script src="/static/student_editor.js"></script>
+</body>
+</html>
