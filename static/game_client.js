@@ -27,6 +27,138 @@
   const lastHealth = Object.create(null);
   const flashes = Object.create(null);   // pid -> until-timestamp
 
+  // --- Procedural sound effects (WebAudio) -------------------------------
+  // No external assets — every sound is synthesized so it always works
+  // offline and there are no licensing/CORS issues.
+  const SFX = (() => {
+    let ctxA = null;
+    let muted = false;
+    let masterGain = null;
+    const ensure = () => {
+      if (ctxA) return ctxA;
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        ctxA = new AC();
+        masterGain = ctxA.createGain();
+        masterGain.gain.value = 0.35;
+        masterGain.connect(ctxA.destination);
+      } catch (_) { ctxA = null; }
+      return ctxA;
+    };
+    // Resume on first user gesture (browser autoplay policy).
+    const resume = () => { const a = ensure(); if (a && a.state === 'suspended') a.resume(); };
+    window.addEventListener('pointerdown', resume, { once: false });
+    window.addEventListener('keydown', resume, { once: false });
+
+    const tone = (opts) => {
+      const a = ensure(); if (!a || muted) return;
+      const t0 = a.currentTime;
+      const dur = opts.dur || 0.18;
+      const osc = a.createOscillator();
+      osc.type = opts.type || 'sine';
+      osc.frequency.setValueAtTime(opts.f0 || 440, t0);
+      if (opts.f1) osc.frequency.exponentialRampToValueAtTime(Math.max(20, opts.f1), t0 + dur);
+      const g = a.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(opts.peak || 0.4, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      osc.connect(g).connect(masterGain);
+      osc.start(t0);
+      osc.stop(t0 + dur + 0.02);
+    };
+    const noise = (opts) => {
+      const a = ensure(); if (!a || muted) return;
+      const t0 = a.currentTime;
+      const dur = opts.dur || 0.18;
+      const buf = a.createBuffer(1, Math.floor(a.sampleRate * dur), a.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1);
+      const src = a.createBufferSource();
+      src.buffer = buf;
+      const filt = a.createBiquadFilter();
+      filt.type = opts.filter || 'lowpass';
+      filt.frequency.setValueAtTime(opts.f0 || 1200, t0);
+      if (opts.f1) filt.frequency.exponentialRampToValueAtTime(Math.max(40, opts.f1), t0 + dur);
+      const g = a.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(opts.peak || 0.35, t0 + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      src.connect(filt).connect(g).connect(masterGain);
+      src.start(t0);
+      src.stop(t0 + dur + 0.02);
+    };
+
+    return {
+      cast(kind) {
+        switch (kind) {
+          case 'projectile': // laser zap
+            tone({ type: 'sawtooth', f0: 880, f1: 220, dur: 0.16, peak: 0.35 });
+            break;
+          case 'area': // boom
+            noise({ filter: 'lowpass', f0: 900, f1: 80, dur: 0.45, peak: 0.55 });
+            tone({ type: 'sine', f0: 110, f1: 40, dur: 0.4, peak: 0.45 });
+            break;
+          case 'melee': // whoosh + thud
+            noise({ filter: 'bandpass', f0: 2200, f1: 600, dur: 0.18, peak: 0.4 });
+            tone({ type: 'square', f0: 180, f1: 90, dur: 0.12, peak: 0.3 });
+            break;
+          case 'dash': // upward whoosh
+            noise({ filter: 'highpass', f0: 400, f1: 2400, dur: 0.22, peak: 0.35 });
+            tone({ type: 'triangle', f0: 300, f1: 900, dur: 0.18, peak: 0.25 });
+            break;
+          case 'shield': // warm hum-up
+            tone({ type: 'triangle', f0: 220, f1: 440, dur: 0.32, peak: 0.35 });
+            tone({ type: 'sine', f0: 330, f1: 660, dur: 0.32, peak: 0.18 });
+            break;
+          case 'heal': // chime
+            tone({ type: 'sine', f0: 660, f1: 990, dur: 0.22, peak: 0.3 });
+            setTimeout(() => tone({ type: 'sine', f0: 990, f1: 1320, dur: 0.22, peak: 0.28 }), 70);
+            break;
+          default:
+            tone({ type: 'square', f0: 500, f1: 250, dur: 0.12, peak: 0.25 });
+        }
+      },
+      hit() {
+        noise({ filter: 'lowpass', f0: 1600, f1: 200, dur: 0.12, peak: 0.45 });
+        tone({ type: 'square', f0: 160, f1: 60, dur: 0.09, peak: 0.32 });
+      },
+      heal() {
+        tone({ type: 'sine', f0: 880, f1: 1320, dur: 0.18, peak: 0.25 });
+      },
+      death() {
+        tone({ type: 'sawtooth', f0: 440, f1: 60, dur: 0.55, peak: 0.5 });
+        noise({ filter: 'lowpass', f0: 800, f1: 80, dur: 0.5, peak: 0.3 });
+      },
+      pickup() {
+        tone({ type: 'square', f0: 660, f1: 1320, dur: 0.14, peak: 0.3 });
+      },
+      capture() {
+        tone({ type: 'triangle', f0: 523, f1: 784, dur: 0.18, peak: 0.35 });
+        setTimeout(() => tone({ type: 'triangle', f0: 784, f1: 1046, dur: 0.22, peak: 0.35 }), 90);
+      },
+      setMuted(m) { muted = !!m; },
+      isMuted() { return muted; },
+    };
+  })();
+  // Expose for the mute toggle.
+  window.__SFX = SFX;
+
+  function toggleMute() {
+    SFX.setMuted(!SFX.isMuted());
+    const btn = document.getElementById('muteBtn');
+    if (btn) btn.textContent = SFX.isMuted() ? '🔇' : '🔊';
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('muteBtn');
+    if (btn) btn.addEventListener('click', toggleMute);
+  });
+  // In case DOM is already ready:
+  {
+    const btn = document.getElementById('muteBtn');
+    if (btn) btn.addEventListener('click', toggleMute);
+  }
+
   function setStatus(text, cls) {
     statusEl.textContent = text;
     statusEl.className = 'status ' + (cls || '');
@@ -166,6 +298,7 @@
     if (isRoll && ws && ws.readyState === 1) {
       ws.send(JSON.stringify({ type: 'roll' }));
     }
+    if (k === 'm') toggleMute();
   });
   window.addEventListener('keyup', (ev) => {
     const k = normalizeKey(ev);
@@ -239,11 +372,26 @@
     const out = [];
     let s = 0x9e3779b1;
     function rnd() { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; }
-    for (let i = 0; i < 220; i++) {
-      out.push({ x: rnd() * 2400, y: rnd() * 1600, r: rnd() * 1.4 + 0.3, a: rnd() * 0.6 + 0.2 });
+    for (let i = 0; i < 380; i++) {
+      out.push({
+        x: rnd() * 3200, y: rnd() * 2200,
+        r: rnd() * 1.6 + 0.3,
+        a: rnd() * 0.6 + 0.2,
+        // twinkle phase + speed
+        ph: rnd() * Math.PI * 2,
+        sp: 0.4 + rnd() * 1.2,
+      });
     }
     return out;
   })();
+
+  // Slow-drifting coloured nebula blobs across the arena floor.
+  const nebulae = [
+    { x: 0.20, y: 0.30, r: 380, c: 'rgba(93, 214, 255, 0.10)', sp: 0.07 },
+    { x: 0.75, y: 0.20, r: 460, c: 'rgba(255, 100, 180, 0.08)', sp: 0.05 },
+    { x: 0.55, y: 0.75, r: 520, c: 'rgba(255, 177, 59, 0.09)', sp: 0.06 },
+    { x: 0.10, y: 0.85, r: 320, c: 'rgba(160, 110, 255, 0.10)', sp: 0.09 },
+  ];
 
   // ----- Sprite cache + per-player animation state -----
   const spriteCache = Object.create(null); // dataURI -> HTMLImageElement
@@ -271,6 +419,7 @@
 
   function drawBackground(ox, oy) {
     const { w, h } = viewportSize();
+    const tNow = performance.now() / 1000;
     // Vignette outside the world.
     const grad = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.2,
                                           w / 2, h / 2, Math.max(w, h) * 0.8);
@@ -278,25 +427,49 @@
     grad.addColorStop(1, '#03040a');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, h);
-    // Stars (parallax 0.3x camera).
+    // Twinkling parallax stars.
     ctx.fillStyle = '#ffffff';
     for (const s of stars) {
-      ctx.globalAlpha = s.a;
       const sx = ox * 0.3 + s.x;
       const sy = oy * 0.3 + s.y;
       if (sx < -2 || sy < -2 || sx > w + 2 || sy > h + 2) continue;
+      const tw = 0.55 + 0.45 * Math.sin(tNow * s.sp + s.ph);
+      ctx.globalAlpha = s.a * tw;
       ctx.beginPath(); ctx.arc(sx, sy, s.r, 0, Math.PI * 2); ctx.fill();
     }
     ctx.globalAlpha = 1;
-    // Arena floor (slightly translucent dark hex grid).
-    ctx.fillStyle = 'rgba(20, 24, 50, 0.85)';
+    // Arena floor base.
+    ctx.fillStyle = 'rgba(14, 18, 38, 0.92)';
     ctx.fillRect(ox, oy, world.width, world.height);
-    // Soft inner glow on the arena edges.
-    const eg = ctx.createLinearGradient(ox, oy, ox, oy + world.height);
-    eg.addColorStop(0, 'rgba(93,214,255,0.06)');
-    eg.addColorStop(1, 'rgba(255,177,59,0.04)');
-    ctx.fillStyle = eg;
-    ctx.fillRect(ox, oy, world.width, world.height);
+    // Drifting coloured nebula blobs (clipped to arena).
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(ox, oy, world.width, world.height);
+    ctx.clip();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const n of nebulae) {
+      const dx = Math.cos(tNow * n.sp) * 80;
+      const dy = Math.sin(tNow * n.sp * 1.3) * 60;
+      const cx = ox + n.x * world.width + dx;
+      const cy = oy + n.y * world.height + dy;
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, n.r);
+      g.addColorStop(0, n.c);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(cx - n.r, cy - n.r, n.r * 2, n.r * 2);
+    }
+    // Concentric pulse rings from arena centre.
+    ctx.globalCompositeOperation = 'source-over';
+    const ccx = ox + world.width / 2, ccy = oy + world.height / 2;
+    const maxR = Math.hypot(world.width, world.height) / 2;
+    for (let i = 0; i < 3; i++) {
+      const phase = (tNow * 0.18 + i / 3) % 1;
+      const rr = phase * maxR;
+      ctx.strokeStyle = `rgba(255, 177, 59, ${(1 - phase) * 0.10})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(ccx, ccy, rr, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.restore();
     // Grid.
     ctx.strokeStyle = 'rgba(255,255,255,0.05)';
     ctx.lineWidth = 1;
@@ -364,8 +537,9 @@
 
   function drawPlayers(ox, oy) {
     const now = performance.now();
+    const RENDER_SCALE = 1.8; // visual-only; hitboxes stay server-authoritative
     for (const p of snapshot.players || []) {
-      const r = p.size / 2;
+      const r = (p.size / 2) * RENDER_SCALE;
       const px = ox + p.x, py = oy + p.y;
       ctx.globalAlpha = p.alive ? 1 : 0.25;
 
@@ -454,9 +628,13 @@
 
       // Hit flash overlay.
       if (flashes[p.pid] && now < flashes[p.pid]) {
-        const k = (flashes[p.pid] - now) / 130;
-        ctx.fillStyle = `rgba(255,255,255,${0.55 * k})`;
-        ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
+        const k = (flashes[p.pid] - now) / 260;
+        ctx.save();
+        ctx.shadowColor = '#ff3030';
+        ctx.shadowBlur = 18 * k;
+        ctx.fillStyle = `rgba(255, 80, 80, ${0.65 * k})`;
+        ctx.beginPath(); ctx.arc(px, py, r * 1.05, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
       } else if (flashes[p.pid]) { delete flashes[p.pid]; }
 
       // Sprint dust (cheap).
@@ -579,14 +757,30 @@
       const age = now - r.born;
       if (age >= r.ttl) { ripples.splice(i, 1); continue; }
       const t = age / r.ttl;
-      ctx.globalAlpha = 1 - t;
+      const cx = ox + r.x, cy = oy + r.y;
+      const rad = r.r0 + (r.r1 - r.r0) * t;
+      ctx.globalAlpha = (1 - t) * 0.9;
       ctx.strokeStyle = r.color;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+      ctx.stroke();
+      // Inner echo ring for extra punch.
+      ctx.globalAlpha = (1 - t) * 0.5;
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(ox + r.x, oy + r.y, r.r0 + (r.r1 - r.r0) * t, 0, Math.PI * 2);
+      ctx.arc(cx, cy, rad * 0.6, 0, Math.PI * 2);
       ctx.stroke();
+      if (r.label) {
+        ctx.globalAlpha = 1 - t;
+        ctx.fillStyle = r.color;
+        ctx.font = 'bold 12px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText(r.label, cx, cy - rad - 6 - t * 18);
+      }
     }
     ctx.globalAlpha = 1;
+    ctx.textAlign = 'start';
   }
 
   function drawMinimap() {
@@ -625,9 +819,10 @@
           vy: -32, // px/s upward
           dx: (Math.random() - 0.5) * 20,
         });
-        flashes[p.pid] = now + 130;
+        flashes[p.pid] = now + 260;
         const a = (playerAnim[p.pid] = playerAnim[p.pid] || {state:'idle',frame:0,lastT:0,lastDx:0,lastDy:0});
         a.hurtUntil = now + 260;
+        SFX.hit();
       } else if (prev !== undefined && p.health > prev + 0.01) {
         const heal = Math.round(p.health - prev);
         floaters.push({
@@ -635,6 +830,7 @@
           text: '+' + heal, color: '#7affad',
           born: now, ttl: 900, vy: -28, dx: (Math.random() - 0.5) * 20,
         });
+        SFX.heal();
       }
       lastHealth[p.pid] = p.health;
     }
@@ -650,12 +846,15 @@
       const victim = playersById[e.pid];
       const killer = playersById[e.by];
       addKillRow(killer, victim);
+      SFX.death();
     } else if (e.kind === 'flag_pickup') {
       const carrier = playersById[e.pid];
       if (carrier) showBanner(`${carrier.username} grabbed the ${e.team === 1 ? 'Blue' : 'Red'} flag!`, 1500);
+      SFX.pickup();
     } else if (e.kind === 'flag_capture') {
       const scorer = playersById[e.pid];
       if (scorer) showBanner(`${e.team === 1 ? 'Blue' : 'Red'} captured! (${e.score})`, 1800);
+      SFX.capture();
     } else if (e.kind === 'roll') {
       const p = playersById[e.pid];
       if (p) ripples.push({
@@ -663,6 +862,18 @@
         born: performance.now(), ttl: 350,
         r0: p.size / 2, r1: p.size,
       });
+    } else if (e.kind === 'fire') {
+      // Universal cast telegraph: a colored ring at the caster's feet so
+      // every power has SOME visible feedback, even non-projectile ones
+      // like heal / shield / dash.
+      const p = playersById[e.pid];
+      if (p) ripples.push({
+        x: p.x, y: p.y, color: p.color,
+        born: performance.now(), ttl: 600,
+        r0: p.size * 0.4, r1: p.size * 2.2,
+        label: e.power || '',
+      });
+      SFX.cast(e.castKind);
     } else if (e.kind === 'round_start') {
       showBanner(`Round #${e.id} — fight!`, 1400);
     } else if (e.kind === 'round_end') {

@@ -21,6 +21,16 @@
       if (p.username) usernameEl.value = p.username;
     } catch (e) { /* ignore */ }
   }
+  // Detect old JavaScript code from previous sessions and clear it so we
+  // load the fresh Python boilerplate.
+  function looksLikeJs(src) {
+    return /\bfunction\s+buildCharacter\s*\(/.test(src)
+        || /\bvar\s+\w+\s*=/.test(src)
+        || /=>/.test(src);
+  }
+  if (codeEl.value && looksLikeJs(codeEl.value) && !/\bdef\s+build_character\s*\(/.test(codeEl.value)) {
+    codeEl.value = '';
+  }
 
   function persist() {
     try {
@@ -37,38 +47,130 @@
   const spriteSlot = document.getElementById('spriteSlot');
   const spriteFile = document.getElementById('spriteFile');
   const spriteOut = document.getElementById('spriteOut');
+  const spritePreview = document.getElementById('spritePreview');
   const spriteCopyBtn = document.getElementById('spriteCopyBtn');
   const spriteInsertBtn = document.getElementById('spriteInsertBtn');
   let lastSnippet = '';
+  let lastSlot = 'walk';
+  let lastFrames = []; // array of data URIs
+
+  function showPreview(uris) {
+    if (!spritePreview) return;
+    spritePreview.innerHTML = '';
+    if (!uris.length) { spritePreview.hidden = true; return; }
+    spritePreview.hidden = false;
+    for (const u of uris) {
+      const img = document.createElement('img');
+      img.src = u;
+      img.className = 'sprite-thumb';
+      // Show pixel art crisp.
+      img.style.imageRendering = 'pixelated';
+      spritePreview.appendChild(img);
+    }
+  }
+  function buildPythonSnippet(slot, uris) {
+    const lines = uris.map(u => `        "${u}",`).join('\n');
+    return `# Add inside your build_character() return dict:
+"sprites": {
+    "${slot}": [
+${lines}
+    ],
+},`;
+  }
+  function setSnippet(slot, uris) {
+    lastSlot = slot;
+    lastFrames = uris.slice();
+    lastSnippet = buildPythonSnippet(slot, uris);
+    spriteOut.textContent = lastSnippet;
+    showPreview(uris);
+    spriteCopyBtn.disabled = false;
+    if (spriteInsertBtn) spriteInsertBtn.disabled = false;
+  }
+
+  // Parse a Piskel-exported .c file. Returns { width, height, frames: [dataURI...] }.
+  function parsePiskelC(text) {
+    // Piskel uses either IMAGE_WIDTH/HEIGHT/FRAME_COUNT or
+    // <NAME>_FRAME_WIDTH / <NAME>_FRAME_HEIGHT / <NAME>_FRAME_COUNT
+    // (the latter even when <NAME> contains hyphens, which is technically
+    // invalid C but the exporter writes it anyway).
+    const wM = text.match(/(?:IMAGE_WIDTH|FRAME_WIDTH)\s+(\d+)/);
+    const hM = text.match(/(?:IMAGE_HEIGHT|FRAME_HEIGHT)\s+(\d+)/);
+    const fM = text.match(/FRAME_COUNT\s+(\d+)/);
+    if (!wM || !hM) throw new Error('not a Piskel .c file (missing FRAME_WIDTH/HEIGHT or IMAGE_WIDTH/HEIGHT)');
+    const width = parseInt(wM[1], 10);
+    const height = parseInt(hM[1], 10);
+    const frameCount = fM ? parseInt(fM[1], 10) : 1;
+    // Pull all 0x... values in document order.
+    const hex = text.match(/0x[0-9a-fA-F]+/g) || [];
+    const expected = width * height * frameCount;
+    if (hex.length < expected) {
+      throw new Error(`expected ${expected} pixels but found ${hex.length}`);
+    }
+    const frames = [];
+    for (let f = 0; f < frameCount; f++) {
+      const cnv = document.createElement('canvas');
+      cnv.width = width; cnv.height = height;
+      const c = cnv.getContext('2d');
+      const imgData = c.createImageData(width, height);
+      const data = imgData.data;
+      const base = f * width * height;
+      for (let i = 0; i < width * height; i++) {
+        const v = parseInt(hex[base + i], 16);
+        // Piskel stores pixels as little-endian uint32; in source the value
+        // reads 0xAABBGGRR, so byte-0 of memory (red channel) is the LOW byte.
+        const r = v & 0xff;
+        const g = (v >> 8) & 0xff;
+        const b = (v >> 16) & 0xff;
+        const a = (v >> 24) & 0xff;
+        const j = i * 4;
+        data[j] = r; data[j+1] = g; data[j+2] = b; data[j+3] = a;
+      }
+      c.putImageData(imgData, 0, 0);
+      frames.push(cnv.toDataURL('image/png'));
+    }
+    return { width, height, frames };
+  }
+
   if (spriteFile) {
     spriteFile.addEventListener('change', async () => {
-      const files = Array.from(spriteFile.files || []).slice(0, 4);
+      const files = Array.from(spriteFile.files || []);
       if (!files.length) return;
       try {
+        // Single .c file? -> walk animation, all frames.
+        const cFile = files.find(f => f.name.toLowerCase().endsWith('.c'));
+        if (cFile) {
+          const text = await cFile.text();
+          const { frames } = parsePiskelC(text);
+          if (frames.length === 0) throw new Error('no frames in .c file');
+          // Cap at 4 (server-side limit).
+          const trimmed = frames.slice(0, 4);
+          // Sanity-check size budget.
+          const total = trimmed.reduce((n, u) => n + u.length, 0);
+          if (total > 64 * 1024) {
+            throw new Error(`frames total ${(total/1024).toFixed(1)} KB; keep export size small (max 64 KB).`);
+          }
+          setSnippet('walk', trimmed);
+          if (frames.length > 4) {
+            spriteOut.textContent += `\n\n# Note: your .c had ${frames.length} frames; only the first 4 were kept.`;
+          }
+          return;
+        }
+        // Otherwise: PNG/GIF frames into the chosen slot (max 4).
+        const imgs = files.slice(0, 4);
         const dataURIs = [];
-        for (const f of files) {
+        for (const f of imgs) {
           if (!/^image\/(png|gif)$/.test(f.type)) {
-            throw new Error(`${f.name}: must be PNG or GIF`);
+            throw new Error(`${f.name}: must be PNG or GIF (or a .c export)`);
           }
           if (f.size > 16 * 1024) {
             throw new Error(`${f.name} is ${(f.size/1024).toFixed(1)} KB; keep under 16 KB`);
           }
           dataURIs.push(await readAsDataURL(f));
         }
-        const slot = spriteSlot.value;
-        const lines = dataURIs.map(u => `      "${u}"`).join(',\n');
-        lastSnippet =
-`// Add inside your buildCharacter return object:
-sprites: {
-  ${slot}: [
-${lines}
-  ]
-}`;
-        spriteOut.textContent = lastSnippet;
-        spriteCopyBtn.disabled = false;
-        if (spriteInsertBtn) spriteInsertBtn.disabled = false;
+        setSnippet(spriteSlot.value, dataURIs);
       } catch (e) {
         spriteOut.textContent = 'Error: ' + (e.message || e);
+        showPreview([]);
         spriteCopyBtn.disabled = true;
         if (spriteInsertBtn) spriteInsertBtn.disabled = true;
       }
@@ -85,40 +187,52 @@ ${lines}
     });
     if (spriteInsertBtn) {
       spriteInsertBtn.addEventListener('click', () => {
-        if (!lastSnippet) return;
-        // Try to inject into the existing return { ... } in buildCharacter.
+        if (!lastFrames.length) return;
+        // Python-aware insertion: look for an existing "sprites": { ... } dict
+        // inside the build_character() return value, OR insert one before the
+        // closing brace of the LAST return dict.
         const code = codeEl.value;
-        const slotName = spriteSlot.value;
-        // Strip the leading "// Add inside..." comment line + "sprites:" keyword
-        // so we can splice the inner block directly into a return object.
-        const inner = lastSnippet.split('\n').slice(2, -1).join('\n'); // the "  slot: [ ... ]" lines
-        // Look for an existing `sprites: {` in the user code.
-        const hasSprites = /\bsprites\s*:\s*\{/.test(code);
+        const slot = lastSlot;
+        const slotBlock =
+`        "${slot}": [\n` +
+          lastFrames.map(u => `            "${u}",`).join('\n') +
+`\n        ],`;
         let next;
-        if (hasSprites) {
-          // Insert (or replace) just this slot's array inside the existing sprites object.
-          const slotRe = new RegExp(`(\\b${slotName}\\s*:\\s*\\[)[\\s\\S]*?(\\])`, 'm');
+        const slotRe = new RegExp(`("${slot}"\\s*:\\s*\\[)[\\s\\S]*?(\\])`, 'm');
+        if (/"sprites"\s*:\s*\{/.test(code)) {
           if (slotRe.test(code)) {
-            // Replace existing array contents.
-            const arr = inner.replace(new RegExp(`^\\s*${slotName}\\s*:\\s*\\[`), '').replace(/\]\s*$/, '');
-            next = code.replace(slotRe, `$1${arr}$2`);
+            // Replace the array contents.
+            const inner = lastFrames.map(u => `            "${u}",`).join('\n');
+            next = code.replace(slotRe, `$1\n${inner}\n        $2`);
           } else {
-            // Add new slot inside existing sprites: { ... }.
-            next = code.replace(/(sprites\s*:\s*\{)/, `$1\n${inner.replace(/^\s*/gm, '    ')},`);
+            // Add a new slot inside the existing sprites dict.
+            next = code.replace(/("sprites"\s*:\s*\{)/, `$1\n${slotBlock}`);
           }
         } else {
-          // Insert a fresh sprites block before the final `};` of the return object.
-          // Prefer the LAST `};` in the file that closes `return { ... }`.
-          const idx = code.lastIndexOf('};');
-          if (idx === -1) {
-            spriteOut.textContent += '\n\n(Could not find a return object to insert into. Paste manually.)';
+          // Inject a fresh sprites entry before the LAST `}` that closes a
+          // return dict. We look for `return {` then find its matching close.
+          const retIdx = code.search(/return\s*\{/);
+          if (retIdx === -1) {
+            spriteOut.textContent += '\n\n# Could not find a return dict to insert into. Paste manually.';
             return;
           }
-          // Insert before that `};` with proper indent + comma if needed.
-          const before = code.slice(0, idx).replace(/[\s,]+$/, '');
-          const needsComma = !before.endsWith(',');
-          const insertion = `${needsComma ? ',' : ''}\n  sprites: {\n${inner.replace(/^/gm, '  ')}\n  },\n`;
-          next = before + insertion + code.slice(idx);
+          // Find the matching closing brace by simple counting.
+          let i = code.indexOf('{', retIdx);
+          let depth = 0, end = -1;
+          for (; i < code.length; i++) {
+            const ch = code[i];
+            if (ch === '{') depth++;
+            else if (ch === '}') { depth--; if (depth === 0) { end = i; break; } }
+          }
+          if (end === -1) {
+            spriteOut.textContent += '\n\n# Could not find the closing } of return. Paste manually.';
+            return;
+          }
+          // Insert before the closing brace, with a comma if needed.
+          const before = code.slice(0, end).replace(/[\s]+$/, '');
+          const needsComma = !/[\{,]\s*$/.test(before);
+          const insertion = `${needsComma ? ',' : ''}\n    "sprites": {\n${slotBlock}\n    },\n`;
+          next = before + insertion + code.slice(end);
         }
         codeEl.value = next;
         persist();
@@ -144,8 +258,8 @@ ${lines}
 
   async function loadExample(which) {
     let url;
-    if (which === 'boilerplate') url = '/api/boilerplate/character.js';
-    else url = '/api/example/' + encodeURIComponent(which) + '/character.js';
+    if (which === 'boilerplate') url = '/api/boilerplate/character.py';
+    else url = '/api/example/' + encodeURIComponent(which) + '/character.py';
     const text = await loadFile(url);
     codeEl.value = text;
     persist();
@@ -155,6 +269,45 @@ ${lines}
   }
 
   exampleSel.addEventListener('change', () => loadExample(exampleSel.value));
+  const loadExBtn = document.getElementById('loadExampleBtn');
+  if (loadExBtn) {
+    loadExBtn.addEventListener('click', () => {
+      if (codeEl.value.trim() && !confirm('Replace your code with the selected example?')) return;
+      loadExample(exampleSel.value).catch(err => {
+        outEl.textContent = 'Could not load example: ' + err.message;
+      });
+    });
+  }
+
+  const resetBtn = document.getElementById('resetBtn');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      if (codeEl.value.trim() && !confirm('Replace your code with the Medic boilerplate?')) return;
+      loadExample('boilerplate').catch(err => {
+        outEl.textContent = 'Could not load boilerplate: ' + err.message;
+      });
+    });
+  }
+
+  // .py file upload
+  const pyFile = document.getElementById('pyFile');
+  if (pyFile) {
+    pyFile.addEventListener('change', async () => {
+      const f = pyFile.files && pyFile.files[0];
+      if (!f) return;
+      if (f.size > 200 * 1024) {
+        outEl.textContent = 'Error: ' + f.name + ' is over 200 KB.';
+        return;
+      }
+      const text = await f.text();
+      codeEl.value = text;
+      persist();
+      outEl.textContent = 'Loaded ' + f.name + '. Click "Run & Validate".';
+      joinBtn.disabled = true;
+      validatedManifest = null;
+      pyFile.value = '';  // allow re-uploading the same filename
+    });
+  }
 
   // Initial load: if no saved code, fetch the boilerplate.
   if (!codeEl.value.trim()) {
@@ -163,67 +316,62 @@ ${lines}
     });
   }
 
-  // Run the student's JS inside a sandboxed iframe. The iframe has no
-  // network/storage access and cannot touch the parent page; it just calls
-  // buildCharacter() and posts the result back via postMessage.
-  function runInSandbox(code, timeoutMs) {
-    return new Promise((resolve, reject) => {
-      const iframe = document.createElement('iframe');
-      iframe.setAttribute('sandbox', 'allow-scripts');
-      iframe.style.display = 'none';
-
-      const token = Math.random().toString(36).slice(2);
-      const html = `<!doctype html><html><body><script>
-        (function () {
-          function send(payload) {
-            parent.postMessage(Object.assign({__iog: ${JSON.stringify(token)}}, payload), '*');
-          }
-          try {
-            ${code}
-            if (typeof buildCharacter !== 'function') {
-              send({ok: false, error: 'You must define a function called buildCharacter().'});
-              return;
-            }
-            var result;
-            try { result = buildCharacter(); }
-            catch (e) { send({ok: false, error: 'buildCharacter() threw: ' + (e && e.message || e)}); return; }
-            try {
-              JSON.stringify(result);
-            } catch (e) {
-              send({ok: false, error: 'buildCharacter() must return plain JSON-friendly data.'});
-              return;
-            }
-            send({ok: true, manifest: result});
-          } catch (e) {
-            send({ok: false, error: 'Script error: ' + (e && e.message || e)});
-          }
-        })();
-      <\/script></body></html>`;
-      iframe.srcdoc = html;
-
-      let done = false;
-      function cleanup() {
-        window.removeEventListener('message', onMsg);
-        if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
-      }
-      function onMsg(ev) {
-        const data = ev.data;
-        if (!data || data.__iog !== token) return;
-        if (done) return;
-        done = true;
-        cleanup();
-        if (data.ok) resolve(data.manifest);
-        else reject(new Error(data.error || 'unknown error'));
-      }
-      window.addEventListener('message', onMsg);
-      document.body.appendChild(iframe);
-      setTimeout(() => {
-        if (done) return;
-        done = true;
-        cleanup();
-        reject(new Error('Script took too long to run.'));
-      }, timeoutMs);
+  // Run the student's Python in Pyodide. Pyodide runs entirely in the
+  // browser tab (sandboxed by the browser) so untrusted code can't reach
+  // the network or page DOM beyond what we expose.
+  let pyodidePromise = null;
+  const pyStatus = document.getElementById('pyStatus');
+  function setPyStatus(text, cls) {
+    if (!pyStatus) return;
+    pyStatus.textContent = text;
+    pyStatus.className = 'py-status ' + (cls || '');
+  }
+  function loadPyodideOnce() {
+    if (pyodidePromise) return pyodidePromise;
+    setPyStatus('⊙ loading Python…', 'loading');
+    pyodidePromise = (async () => {
+      const py = await loadPyodide({
+        indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/',
+      });
+      setPyStatus('● Python ready', 'ready');
+      return py;
+    })().catch(err => {
+      setPyStatus('⚠ Python failed to load', 'err');
+      pyodidePromise = null;
+      throw err;
     });
+    return pyodidePromise;
+  }
+  // Kick off the download as soon as the page loads so it's warm by the
+  // time the student presses Run.
+  loadPyodideOnce().catch(() => {});
+
+  async function runInPyodide(code) {
+    const py = await loadPyodideOnce();
+    // Fresh namespace each run.
+    const ns = py.toPy({});
+    try {
+      await py.runPythonAsync(code, { globals: ns });
+      const builder = ns.get('build_character');
+      if (!builder) {
+        throw new Error('You must define a function called build_character().');
+      }
+      let resultProxy;
+      try {
+        resultProxy = builder();
+      } finally {
+        builder.destroy && builder.destroy();
+      }
+      // Convert PyProxy -> JS plain object via JSON to avoid Map/PyProxy issues.
+      const jsonStr = py.runPython(
+        'import json\njson.dumps(_iog_result, default=str)',
+        { globals: py.toPy({ _iog_result: resultProxy }) }
+      );
+      resultProxy && resultProxy.destroy && resultProxy.destroy();
+      return JSON.parse(jsonStr);
+    } finally {
+      ns.destroy && ns.destroy();
+    }
   }
 
   runBtn.addEventListener('click', async () => {
@@ -232,9 +380,9 @@ ${lines}
     validatedManifest = null;
     let manifest;
     try {
-      manifest = await runInSandbox(codeEl.value, 1500);
+      manifest = await runInPyodide(codeEl.value);
     } catch (e) {
-      outEl.textContent = 'Error: ' + e.message;
+      outEl.textContent = 'Error: ' + (e && e.message ? e.message : e);
       return;
     }
     // Server-side validate.

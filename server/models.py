@@ -30,7 +30,7 @@ NAME_MAX_LEN = 24
 
 MAX_HEALTH_RANGE = (10, 300)
 SIZE_RANGE = (8, 60)
-SPEED_RANGE = (40, 400)
+SPEED_RANGE = (40, 500)
 
 DAMAGE_RANGE = (1, 60)
 HEAL_RANGE = (1, 80)
@@ -204,6 +204,7 @@ class AreaCast(_CastBase):
     radius: float
     durationMs: float
     tickIntervalMs: float = 250
+    followOwner: bool = False  # if true, the area moves with the caster
     onTick: List[Effect]
 
     _vr = field_validator("radius")(_ranged("area radius", *AREA_RADIUS_RANGE))

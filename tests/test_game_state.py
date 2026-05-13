@@ -75,6 +75,7 @@ def test_add_remove_player():
 
 
 def test_diagonal_speed_normalized():
+    from server.game_state import SPEED_MULT_GLOBAL
     g = GameState()
     p = g.add_player("ada", make_manifest(speed=200))
     start_x, start_y = p.x, p.y
@@ -83,7 +84,8 @@ def test_diagonal_speed_normalized():
     dx = p.x - start_x
     dy = p.y - start_y
     dist = (dx * dx + dy * dy) ** 0.5
-    assert abs(dist - 200) < 5
+    expected = 200 * SPEED_MULT_GLOBAL
+    assert abs(dist - expected) < 5
 
 
 def test_projectile_hits_and_kills():

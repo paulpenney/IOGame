@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Student Editor · Classroom IO Game</title>
   <link rel="stylesheet" href="/static/styles.css" />
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
 </head>
 <body class="splash-bg">
   <div class="splash-stars" aria-hidden="true"></div>
@@ -35,50 +36,55 @@
         <input id="username" type="text" maxlength="24" placeholder="e.g. ada" />
 
         <label for="example">Load example</label>
-        <select id="example">
-          <option value="boilerplate">Boilerplate (start here)</option>
-          <option value="fire_wizard">Fire Wizard (projectile + DoT)</option>
-          <option value="ice_tank">Ice Tank (slow + shield)</option>
-          <option value="medic">Medic (heal + heal-area)</option>
-          <option value="rogue">Rogue (dash + melee + stun)</option>
-        </select>
+        <div class="row example-row">
+          <select id="example">
+            <option value="boilerplate">Medic (boilerplate — start here)</option>
+            <option value="fire_wizard">Fire Wizard — projectile + area DoT</option>
+            <option value="ice_tank">Ice Tank — shield + melee + slow</option>
+            <option value="rogue">Rogue — dash + backstab</option>
+            <option value="paladin">Paladin — shield + heal + melee</option>
+            <option value="bomber">Bomber — grenade + poison cloud</option>
+          </select>
+          <button type="button" id="loadExampleBtn" class="btn-secondary">Load</button>
+        </div>
 
-        <label for="code">character.js</label>
-        <textarea id="code" spellcheck="false"></textarea>
+        <label for="code">character.py <span class="py-status" id="pyStatus">⊙ loading Python…</span></label>
+        <textarea id="code" spellcheck="false" placeholder="# Define a function called build_character() that returns a dict."></textarea>
+
+        <div class="row py-upload-row">
+          <label class="py-upload">
+            <input id="pyFile" type="file" accept=".py,text/x-python,text/plain" />
+            <span>↑ Upload .py file</span>
+          </label>
+        </div>
 
         <details class="sprite-import" open>
-          <summary>🎨 Add custom pixel art (PiskelApp)</summary>
+          <summary>🎨 Pixel art (PiskelApp)</summary>
           <div class="sprite-help">
-            <p>Draw a sprite at <a href="https://www.piskelapp.com/" target="_blank" rel="noopener">piskelapp.com</a>,
-               export as <strong>PNG</strong>, then drop the file here. We turn it into a small
-               <code>data:</code> string you can paste into your <code>sprites</code> block.</p>
             <div class="sprite-row">
               <label class="sprite-pick">
                 <span>Slot:</span>
                 <select id="spriteSlot">
-                  <option value="idle">idle</option>
-                  <option value="walk">walk</option>
+                  <option value="walk" selected>walk</option>
                   <option value="attack">attack</option>
                   <option value="hurt">hurt</option>
                 </select>
               </label>
-              <input id="spriteFile" type="file" accept="image/png,image/gif" multiple />
+              <input id="spriteFile" type="file" accept="image/png,image/gif,.c,text/plain" multiple />
             </div>
-            <pre id="spriteOut" class="sprite-out">Choose 1–4 PNGs (≤16 KB each). Snippet appears here.</pre>
+            <div id="spritePreview" class="sprite-preview" hidden></div>
+            <pre id="spriteOut" class="sprite-out" hidden></pre>
             <div class="sprite-actions">
-              <button type="button" id="spriteCopyBtn" disabled>📋 Copy snippet to clipboard</button>
               <button type="button" id="spriteInsertBtn" disabled>↳ Insert into editor</button>
+              <button type="button" id="spriteCopyBtn" disabled title="Copy snippet">📋</button>
             </div>
-            <p class="hint">In your character return object add <code>sprites: { ... }</code>. Each
-               slot is an array of 1–4 frames; <code>walk</code> animates while moving,
-               <code>attack</code> on power use, <code>hurt</code> on damage, <code>idle</code> otherwise.
-               Total payload limit: 64&nbsp;KB.</p>
           </div>
         </details>
 
         <div class="row">
           <button id="runBtn" type="button">Run &amp; Validate</button>
           <button id="joinBtn" type="button" disabled>Join Game</button>
+          <button id="resetBtn" type="button" class="btn-secondary" title="Reload the Python boilerplate">Reset</button>
         </div>
       </section>
 
@@ -100,14 +106,14 @@
         </div>
         <h2>Tips</h2>
         <ul class="tips">
-          <li>Your function must be named <code>buildCharacter</code>.</li>
-          <li>It must return an object with these fields:
+          <li>Your function must be named <code>build_character</code>.</li>
+          <li>It must return a Python <code>dict</code> with these fields:
             <code>characterName</code>, <code>color</code>, <code>size</code>,
             <code>speed</code>, <code>maxHealth</code>, <code>powers</code>.
           </li>
           <li>Each power has a <code>name</code>, a <code>key</code> to press,
-            a <code>cooldownMs</code>, and a <code>cast</code> object.</li>
-          <li><code>cast.kind</code> is one of: <code>projectile</code>,
+            a <code>cooldownMs</code>, and a <code>cast</code> dict.</li>
+          <li><code>cast["kind"]</code> is one of: <code>projectile</code>,
             <code>area</code>, <code>melee</code>, <code>dash</code>,
             <code>shield</code>, or <code>heal</code>.</li>
           <li>See the <a href="/manual">Power Manual</a> for every field and

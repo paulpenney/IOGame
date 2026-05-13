@@ -34,7 +34,12 @@ DEFAULT_ROUND_S = 120.0
 
 # Movement feel. Higher = snappier acceleration. ~22 gives ~0.52 lerp at 30Hz,
 # which feels punchy without being literal snap.
-MOVE_ACCEL = 22.0
+MOVE_ACCEL = 18.0
+# Slower deceleration when no input is given — the player coasts/slides.
+MOVE_DECEL = 4.5
+# Global speed multiplier applied on top of the per-character speed.
+# Bumped to give the game a snappier overall pace.
+SPEED_MULT_GLOBAL = 1.20
 
 # Universal skill moves (free for every character, not in their build budget).
 STAMINA_MAX = 100.0
@@ -161,6 +166,7 @@ class Area:
     next_tick_at: float
     tick_interval: float
     on_tick: List[dict]
+    follow_owner: bool = False
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:8])
 
     def to_public(self) -> dict:
@@ -364,7 +370,7 @@ class GameState:
             self._cast_shield(p, power, cast, now)
         elif kind == "heal":
             self._cast_heal(p, power, cast, now)
-        self.events.append({"kind": "fire", "pid": pid, "power": power.name})
+        self.events.append({"kind": "fire", "pid": pid, "power": power.name, "castKind": kind})
         return True
 
     # --- cast handlers ----------------------------------------------------
@@ -403,6 +409,7 @@ class GameState:
             next_tick_at=now,  # tick immediately
             tick_interval=cast.tickIntervalMs / 1000.0,
             on_tick=[e.model_dump() for e in cast.onTick],
+            follow_owner=bool(getattr(cast, "followOwner", False)),
         ))
 
     def _cast_melee(self, p: Player, power: Power, cast, now: float) -> None:
@@ -549,12 +556,15 @@ class GameState:
         if now < p.stun_until:
             return 0.0
         if now < p.slow_until:
-            return p.manifest.speed * p.slow_factor
-        return p.manifest.speed
+            return p.manifest.speed * p.slow_factor * SPEED_MULT_GLOBAL
+        return p.manifest.speed * SPEED_MULT_GLOBAL
 
     def _step_players(self, dt: float, now: float) -> None:
-        # Smooth-acceleration lerp coefficient (frame-rate independent).
-        accel = 1.0 - math.exp(-dt * MOVE_ACCEL)
+        # Frame-rate-independent lerp coefficients. We use a faster ramp when
+        # the player is actively pushing a direction (ease-in) and a slower
+        # one when no input is held (coast / slide — ease-out).
+        accel_in = 1.0 - math.exp(-dt * MOVE_ACCEL)
+        accel_out = 1.0 - math.exp(-dt * MOVE_DECEL)
         for pid, p in self.players.items():
             if not p.alive:
                 p.vx = p.vy = 0
@@ -581,8 +591,9 @@ class GameState:
                 speed *= SPRINT_SPEED_MULT
             target_vx = mx * speed
             target_vy = my * speed
-            p.vx += (target_vx - p.vx) * accel
-            p.vy += (target_vy - p.vy) * accel
+            k = accel_in if (mx != 0 or my != 0) else accel_out
+            p.vx += (target_vx - p.vx) * k
+            p.vy += (target_vy - p.vy) * k
             p.x += p.vx * dt
             p.y += p.vy * dt
             # Facing follows mouse aim when available, else movement direction.
@@ -641,6 +652,11 @@ class GameState:
             if now >= a.expires_at:
                 continue
             survivors.append(a)
+            # Areas that follow their caster track the player position each tick.
+            if a.follow_owner:
+                owner = self.players.get(a.pid)
+                if owner is not None and owner.alive:
+                    a.x, a.y = owner.x, owner.y
             if now >= a.next_tick_at:
                 a.next_tick_at = now + a.tick_interval
                 source = self.players.get(a.pid)

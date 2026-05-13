@@ -65,6 +65,7 @@ def create_app(game: GameState | None = None) -> FastAPI:
     app = FastAPI(title="Classroom IO Game", lifespan=lifespan)
     app.state.game = game or GameState()
     app.state.connections: Dict[str, WebSocket] = {}
+    app.state.spectators: set[WebSocket] = set()
     app.state.tick_task = None
     # Teacher token: read from env, else generate one and print it once.
     token = os.environ.get("TEACHER_TOKEN")
@@ -103,6 +104,10 @@ def create_app(game: GameState | None = None) -> FastAPI:
     @app.get("/challenges")
     async def challenges_page() -> FileResponse:
         return FileResponse(STATIC_DIR / "challenges.html")
+
+    @app.get("/spectator")
+    async def spectator_page() -> FileResponse:
+        return FileResponse(STATIC_DIR / "spectator.html")
 
     @app.get("/api/health")
     async def health() -> JSONResponse:
@@ -255,9 +260,12 @@ def create_app(game: GameState | None = None) -> FastAPI:
             })
         except Exception: pass
         return {"ok": True, "approved": True, "pid": player.pid}
+
+    @app.get("/api/boilerplate/{name}")
     async def boilerplate(name: str) -> FileResponse:
         # Only allow specific known files; never join arbitrary paths.
         allowed = {"character.html", "character.css", "character.js",
+                   "character.py",
                    "manifest.example.json", "README.md"}
         if name not in allowed:
             return JSONResponse({"error": "not found"}, status_code=404)
@@ -265,8 +273,10 @@ def create_app(game: GameState | None = None) -> FastAPI:
 
     @app.get("/api/example/{slug}/{name}")
     async def example_file(slug: str, name: str) -> FileResponse:
-        allowed_slugs = {"fire_wizard", "ice_tank", "medic", "rogue"}
-        allowed_names = {"character.html", "character.css", "character.js", "manifest.json"}
+        allowed_slugs = {"fire_wizard", "ice_tank", "medic", "rogue",
+                         "paladin", "bomber"}
+        allowed_names = {"character.html", "character.css", "character.js",
+                         "character.py", "manifest.json"}
         if slug not in allowed_slugs or name not in allowed_names:
             return JSONResponse({"error": "not found"}, status_code=404)
         return FileResponse(EXAMPLES_DIR / slug / name)
@@ -380,6 +390,41 @@ def create_app(game: GameState | None = None) -> FastAPI:
                 except Exception:
                     pass
 
+    @app.websocket("/ws/spectator")
+    async def ws_spectator(websocket: WebSocket) -> None:
+        """Read-only firehose for the spectator/projector view.
+
+        No join handshake, no input accepted. Receives the same S2C_STATE +
+        S2C_EVENT broadcasts as players. Sends a single welcome with world
+        dimensions on connect.
+        """
+        await websocket.accept()
+        game: GameState = app.state.game
+        try:
+            await websocket.send_json({
+                "type": S2C_WELCOME,
+                "pid": None,
+                "world": {"width": game.width, "height": game.height},
+                "spectator": True,
+            })
+            app.state.spectators.add(websocket)
+            # Drain incoming (we ignore messages; this lets us detect disconnect).
+            while True:
+                try:
+                    await websocket.receive_text()
+                except WebSocketDisconnect:
+                    break
+        except WebSocketDisconnect:
+            pass
+        except Exception as e:  # noqa: BLE001
+            log.warning("spectator ws error: %s", e)
+        finally:
+            app.state.spectators.discard(websocket)
+            try:
+                await websocket.close()
+            except Exception:
+                pass
+
     return app
 
 
@@ -391,6 +436,7 @@ async def _tick_loop(app: FastAPI) -> None:
         try:
             game.step(TICK_DT)
             snapshot = game.snapshot()
+            snapshot["spectators"] = len(app.state.spectators)
             events = game.drain_events()
             payload_state = {"type": S2C_STATE, "payload": snapshot}
             payload_event = {"type": S2C_EVENT, "payload": events} if events else None
@@ -408,10 +454,9 @@ async def _tick_loop(app: FastAPI) -> None:
 
 
 async def _broadcast(app: FastAPI, message: dict) -> None:
-    conns = list(app.state.connections.items())
-    if not conns:
-        return
     text = json.dumps(message)
+    # Players
+    conns = list(app.state.connections.items())
     dead: list[str] = []
     for pid, ws in conns:
         try:
@@ -421,6 +466,15 @@ async def _broadcast(app: FastAPI, message: dict) -> None:
     for pid in dead:
         app.state.connections.pop(pid, None)
         app.state.game.remove_player(pid)
+    # Spectators (read-only observers)
+    dead_spec: list = []
+    for ws in list(app.state.spectators):
+        try:
+            await ws.send_text(text)
+        except Exception:
+            dead_spec.append(ws)
+    for ws in dead_spec:
+        app.state.spectators.discard(ws)
 
 
 app = create_app()
