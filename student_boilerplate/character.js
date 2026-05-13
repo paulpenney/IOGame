@@ -62,5 +62,14 @@ function buildCharacter() {
     speed: 220,
     maxHealth: 100,
     powers,
+    // Optional: pixel-art sprites (PNG / GIF data: URIs).
+    // Use the "Add custom pixel art" widget below the editor to import frames
+    // from https://www.piskelapp.com/. Up to 4 frames per slot, 16 KB each.
+    // sprites: {
+    //   idle:   ["data:image/png;base64,..."],
+    //   walk:   ["data:image/png;base64,...", "data:image/png;base64,..."],
+    //   attack: ["data:image/png;base64,..."],
+    //   hurt:   ["data:image/png;base64,..."],
+    // },
   };
 }

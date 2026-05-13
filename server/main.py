@@ -25,6 +25,7 @@ from .protocol import (
     C2S_INPUT,
     C2S_JOIN,
     C2S_PING,
+    C2S_ROLL,
     S2C_EVENT,
     S2C_JOIN_ERROR,
     S2C_PENDING,
@@ -156,7 +157,11 @@ def create_app(game: GameState | None = None) -> FastAPI:
     async def teacher_start(payload: dict, x_teacher_token: str | None = Header(default=None)):
         _check_token(x_teacher_token or payload.get("token"))
         duration = float(payload.get("durationSec", 120.0))
-        app.state.game.start_round(duration)
+        mode = payload.get("mode")
+        try:
+            app.state.game.start_round(duration, mode=mode)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
         return {"ok": True, "match": app.state.game._match_public(time.monotonic())}
 
     @app.post("/api/teacher/end_round")
@@ -352,9 +357,13 @@ def create_app(game: GameState | None = None) -> FastAPI:
                 t = msg.get("type")
                 payload = msg.get("payload") or {}
                 if t == C2S_INPUT:
-                    game.set_input(pid, payload.get("mx", 0), payload.get("my", 0))
+                    game.set_input(pid, payload.get("mx", 0), payload.get("my", 0),
+                                   payload.get("ax"), payload.get("ay"),
+                                   sprint=payload.get("sprint"))
                 elif t == C2S_FIRE:
                     game.fire(pid, str(payload.get("key", "")))
+                elif t == C2S_ROLL:
+                    game.roll(pid)
                 elif t == C2S_PING:
                     await websocket.send_json({"type": S2C_PONG, "t": payload.get("t")})
                 # Unknown types are ignored on purpose.

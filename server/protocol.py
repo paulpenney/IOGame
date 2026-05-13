@@ -10,6 +10,7 @@ from __future__ import annotations
 C2S_JOIN = "join"
 C2S_INPUT = "input"          # movement intent
 C2S_FIRE = "fire"            # use a power
+C2S_ROLL = "roll"            # universal dodge-roll skill move
 C2S_PING = "ping"
 
 # Server -> Client

@@ -144,3 +144,47 @@ def test_join_rejects_bad_username():
 def test_hex_color_ok():
     ok, _ = validate_manifest(dict(GOOD, color="#ff8800"))
     assert ok
+
+
+# --- Sprite payload tests ---------------------------------------------------
+
+_TINY_PNG = (
+    "data:image/png;base64,"
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+)
+
+
+def test_sprites_accepted_when_valid():
+    m = dict(GOOD)
+    m["sprites"] = {"idle": [_TINY_PNG], "walk": [_TINY_PNG, _TINY_PNG]}
+    ok, result = validate_manifest(m)
+    assert ok, result
+
+
+def test_sprites_unknown_slot_rejected():
+    m = dict(GOOD)
+    m["sprites"] = {"dance": [_TINY_PNG]}
+    ok, result = validate_manifest(m)
+    assert not ok
+
+
+def test_sprites_too_many_frames_rejected():
+    m = dict(GOOD)
+    m["sprites"] = {"walk": [_TINY_PNG] * 5}
+    ok, result = validate_manifest(m)
+    assert not ok
+
+
+def test_sprites_bad_prefix_rejected():
+    m = dict(GOOD)
+    m["sprites"] = {"idle": ["http://example.com/evil.png"]}
+    ok, result = validate_manifest(m)
+    assert not ok
+
+
+def test_sprites_oversize_rejected():
+    big = "data:image/png;base64," + ("A" * (16 * 1024 + 1))
+    m = dict(GOOD)
+    m["sprites"] = {"idle": [big]}
+    ok, result = validate_manifest(m)
+    assert not ok

@@ -32,6 +32,26 @@ RESPAWN_DELAY_S = 3.0
 # Default round length, in seconds. Teacher can pass any value to start_round.
 DEFAULT_ROUND_S = 120.0
 
+# Movement feel. Higher = snappier acceleration. ~22 gives ~0.52 lerp at 30Hz,
+# which feels punchy without being literal snap.
+MOVE_ACCEL = 22.0
+
+# Universal skill moves (free for every character, not in their build budget).
+STAMINA_MAX = 100.0
+STAMINA_REGEN = 32.0     # per second
+SPRINT_DRAIN = 30.0      # per second while sprinting
+SPRINT_MIN_TO_START = 20 # can't start sprint below this
+SPRINT_SPEED_MULT = 1.55
+ROLL_COST = 35.0
+ROLL_DISTANCE = 130.0     # px instant
+ROLL_IFRAMES_MS = 280
+ROLL_COOLDOWN_S = 0.55
+
+# CTF tuning.
+CTF_FLAG_RADIUS = 18
+CTF_BASE_RADIUS = 80
+CTF_CAPTURES_TO_WIN = 3
+
 
 @dataclass
 class Player:
@@ -44,6 +64,14 @@ class Player:
     vy: float = 0.0
     facing_x: float = 1.0
     facing_y: float = 0.0
+    aim_x: float = 1.0
+    aim_y: float = 0.0
+    team: int = 0  # 0 = no team (FFA), 1 or 2 in team / ctf modes
+    has_flag_team: int = 0  # which team's flag this player is carrying (0 = none)
+    # Universal skill-move state (not in build budget).
+    stamina: float = 100.0
+    sprinting: bool = False
+    roll_ready_at: float = 0.0
     health: float = 0.0
     alive: bool = True
     respawn_at: float = 0.0
@@ -72,12 +100,17 @@ class Player:
             "y": round(self.y, 2),
             "facingX": round(self.facing_x, 3),
             "facingY": round(self.facing_y, 3),
+            "team": self.team,
+            "hasFlag": self.has_flag_team,
+            "stamina": round(self.stamina, 1),
+            "sprinting": self.sprinting,
             "health": round(self.health, 1),
             "maxHealth": self.manifest.maxHealth,
             "alive": self.alive,
             "kills": self.kills,
             "deaths": self.deaths,
             "powers": [p.model_dump() for p in self.manifest.powers],
+            "sprites": self.manifest.sprites or None,
             "status": {
                 "slowed": now < self.slow_until,
                 "stunned": now < self.stun_until,
@@ -180,6 +213,8 @@ class GameState:
         self.tick: int = 0
         self.events: List[dict] = []
         self._inputs: Dict[str, Tuple[float, float]] = {}
+        # Per-player flag: is the sprint key currently held?
+        self._sprint_held: Dict[str, bool] = {}
         # Match / round state. status is one of: 'lobby', 'running', 'ended'.
         self.match_status: str = "lobby"
         self.match_started_at: float = 0.0
@@ -191,18 +226,31 @@ class GameState:
         self.safe_mode: bool = False
         # Pending joins (used when safe_mode is on). Keyed by pending id.
         self.pending_joins: Dict[str, dict] = {}
+        # Game mode: 'ffa' | 'team' | 'ctf'
+        self.mode: str = "ffa"
+        # Team scores (used by team & ctf modes). team_caps used by ctf.
+        self.team_caps: Dict[int, int] = {1: 0, 2: 0}
+        # CTF flag state. Each entry: {'home_x','home_y','x','y','carrier'}.
+        self.flags: Dict[int, dict] = {}
+        self._next_team: int = 1  # round-robin assignment for late joiners
 
     # --- player lifecycle -------------------------------------------------
 
     def add_player(self, username: str, manifest: CharacterManifest) -> Player:
         pid = uuid.uuid4().hex[:10]
-        spawn = self._spawn_point()
+        team = 0
+        if self.mode in ("team", "ctf"):
+            # Late joiners alternate teams to keep numbers balanced.
+            team = self._next_team
+            self._next_team = 2 if team == 1 else 1
+        spawn = self._spawn_point(team)
         p = Player(
             pid=pid,
             username=username,
             manifest=manifest,
             x=spawn[0],
             y=spawn[1],
+            team=team,
             health=manifest.maxHealth,
         )
         self.players[pid] = p
@@ -214,11 +262,20 @@ class GameState:
             username = self.players[pid].username
             del self.players[pid]
             self._inputs.pop(pid, None)
+            self._sprint_held.pop(pid, None)
             self.projectiles = [pr for pr in self.projectiles if pr.pid != pid]
             self.areas = [a for a in self.areas if a.pid != pid]
             self.events.append({"kind": "leave", "pid": pid, "username": username})
 
-    def _spawn_point(self) -> Tuple[float, float]:
+    def _spawn_point(self, team: int = 0) -> Tuple[float, float]:
+        if team in (1, 2):
+            # Spawn on each team's side of the arena.
+            cx = self.width * (0.22 if team == 1 else 0.78)
+            cy = self.height / 2
+            n = sum(1 for p in self.players.values() if p.team == team)
+            angle = (n * 0.9) % (2 * math.pi)
+            r = min(self.width, self.height) * 0.12
+            return cx + math.cos(angle) * r, cy + math.sin(angle) * r
         n = len(self.players)
         angle = (n * 0.7) % (2 * math.pi)
         r = min(self.width, self.height) * 0.25
@@ -227,7 +284,9 @@ class GameState:
 
     # --- inputs -----------------------------------------------------------
 
-    def set_input(self, pid: str, mx: float, my: float) -> None:
+    def set_input(self, pid: str, mx: float, my: float,
+                  ax: Optional[float] = None, ay: Optional[float] = None,
+                  sprint: Optional[bool] = None) -> None:
         mx = max(-1.0, min(1.0, float(mx)))
         my = max(-1.0, min(1.0, float(my)))
         length = math.hypot(mx, my)
@@ -235,6 +294,46 @@ class GameState:
             mx /= length
             my /= length
         self._inputs[pid] = (mx, my)
+        if sprint is not None:
+            self._sprint_held[pid] = bool(sprint)
+        # Optional independent aim direction from the client (mouse cursor).
+        # If not supplied, aim falls back to movement direction in _step_players.
+        if ax is not None and ay is not None:
+            p = self.players.get(pid)
+            if p is not None:
+                alen = math.hypot(float(ax), float(ay))
+                if alen > 0:
+                    p.aim_x = float(ax) / alen
+                    p.aim_y = float(ay) / alen
+
+    def roll(self, pid: str, now: Optional[float] = None) -> bool:
+        """Universal short dodge-roll. Costs stamina, brief invulnerability."""
+        if now is None:
+            now = time.monotonic()
+        p = self.players.get(pid)
+        if p is None or not p.alive:
+            return False
+        if now < p.stun_until:
+            return False
+        if now < p.roll_ready_at:
+            return False
+        if p.stamina < ROLL_COST:
+            return False
+        p.stamina -= ROLL_COST
+        p.roll_ready_at = now + ROLL_COOLDOWN_S
+        # Roll in movement direction if any, else aim direction.
+        mx, my = self._inputs.get(pid, (0.0, 0.0))
+        if mx == 0 and my == 0:
+            mx, my = p.aim_x, p.aim_y
+        length = math.hypot(mx, my) or 1.0
+        mx /= length
+        my /= length
+        p.x += mx * ROLL_DISTANCE
+        p.y += my * ROLL_DISTANCE
+        self._clamp_player(p)
+        p.invuln_until = max(p.invuln_until, now + ROLL_IFRAMES_MS / 1000.0)
+        self.events.append({"kind": "roll", "pid": pid})
+        return True
 
     def fire(self, pid: str, power_key: str, now: Optional[float] = None) -> bool:
         if now is None:
@@ -361,8 +460,17 @@ class GameState:
             return
         if now < target.invuln_until:
             return
+        # Friendly-fire rules in team / CTF modes: harmful effects skip teammates.
+        same_team = (
+            self.mode in ("team", "ctf")
+            and source.pid != target.pid
+            and source.team > 0
+            and source.team == target.team
+        )
         for e in effects:
             kind = e.get("effect")
+            if same_team and kind in ("damage", "slow", "stun", "knockback", "dot"):
+                continue
             if kind == "damage":
                 self._damage(target, source, float(e["amount"]), now)
             elif kind == "heal":
@@ -416,6 +524,10 @@ class GameState:
             target.shield_amount = 0
             if source.pid != target.pid and source.pid in self.players:
                 source.kills += 1
+            # CTF: dropped flag returns home.
+            if self.mode == "ctf" and target.has_flag_team:
+                self._return_flag(target.has_flag_team)
+                target.has_flag_team = 0
             self.events.append({
                 "kind": "death", "pid": target.pid, "by": source.pid,
             })
@@ -441,20 +553,49 @@ class GameState:
         return p.manifest.speed
 
     def _step_players(self, dt: float, now: float) -> None:
+        # Smooth-acceleration lerp coefficient (frame-rate independent).
+        accel = 1.0 - math.exp(-dt * MOVE_ACCEL)
         for pid, p in self.players.items():
             if not p.alive:
                 p.vx = p.vy = 0
+                p.sprinting = False
+                # Dead players still regen stamina slowly.
+                p.stamina = min(STAMINA_MAX, p.stamina + STAMINA_REGEN * 0.5 * dt)
                 continue
             mx, my = self._inputs.get(pid, (0.0, 0.0))
+            sprint_held = self._sprint_held.get(pid, False)
+            # Sprint state machine: must be moving + above min-stamina to start.
+            moving = (mx != 0 or my != 0)
+            if sprint_held and moving and (p.sprinting or p.stamina >= SPRINT_MIN_TO_START):
+                p.sprinting = True
+            else:
+                p.sprinting = False
+            if p.sprinting:
+                p.stamina = max(0.0, p.stamina - SPRINT_DRAIN * dt)
+                if p.stamina <= 0.0:
+                    p.sprinting = False
+            else:
+                p.stamina = min(STAMINA_MAX, p.stamina + STAMINA_REGEN * dt)
             speed = self._effective_speed(p, now)
-            p.vx = mx * speed
-            p.vy = my * speed
+            if p.sprinting:
+                speed *= SPRINT_SPEED_MULT
+            target_vx = mx * speed
+            target_vy = my * speed
+            p.vx += (target_vx - p.vx) * accel
+            p.vy += (target_vy - p.vy) * accel
             p.x += p.vx * dt
             p.y += p.vy * dt
-            if mx != 0 or my != 0:
+            # Facing follows mouse aim when available, else movement direction.
+            if p.aim_x != 0 or p.aim_y != 0:
+                p.facing_x = p.aim_x
+                p.facing_y = p.aim_y
+            elif mx != 0 or my != 0:
                 p.facing_x = mx
                 p.facing_y = my
             self._clamp_player(p)
+        # CTF: keep flag attached to its carrier, handle base captures.
+        if self.mode == "ctf":
+            self._step_ctf(now)
 
     def _clamp_player(self, p: Player) -> None:
         r = p.manifest.size / 2
@@ -542,7 +683,14 @@ class GameState:
                 p.slow_until = p.stun_until = p.shield_until = p.invuln_until = 0
                 p.shield_amount = 0
                 p.dots.clear()
-                spawn = self._spawn_point()
+                # CTF: drop a carried flag on death (returns home immediately).
+                if self.mode == "ctf" and p.has_flag_team:
+                    self._return_flag(p.has_flag_team)
+                    p.has_flag_team = 0
+                p.stamina = STAMINA_MAX
+                p.sprinting = False
+                p.roll_ready_at = 0.0
+                spawn = self._spawn_point(p.team)
                 p.x, p.y = spawn
                 self.events.append({"kind": "respawn", "pid": p.pid})
 
@@ -560,6 +708,9 @@ class GameState:
             "areas": [a.to_public() for a in self.areas],
             "meleeFx": [m.to_public() for m in self.melee_fx],
             "match": self._match_public(now),
+            "mode": self.mode,
+            "flags": self._flags_public() if self.mode == "ctf" else [],
+            "teamScores": self.team_caps if self.mode in ("team", "ctf") else {},
         }
 
     def _match_public(self, now: float) -> dict:
@@ -571,23 +722,54 @@ class GameState:
         return {
             "status": self.match_status,
             "id": self.match_id,
+            "mode": self.mode,
             "remaining": round(remaining, 1),
             "safeMode": self.safe_mode,
             "scoreboard": self.scoreboard(),
             "lastScoreboard": self.last_scoreboard,
             "pendingCount": len(self.pending_joins),
+            "teamScores": self.team_caps if self.mode in ("team", "ctf") else {},
         }
 
     # --- match / round controls ------------------------------------------
 
-    def start_round(self, duration_s: float = DEFAULT_ROUND_S, now: Optional[float] = None) -> None:
+    def start_round(self, duration_s: float = DEFAULT_ROUND_S,
+                    mode: Optional[str] = None,
+                    now: Optional[float] = None) -> None:
         if now is None:
             now = time.monotonic()
+        if mode is not None:
+            mode = mode.lower()
+            if mode not in ("ffa", "team", "ctf"):
+                raise ValueError(f"unknown mode: {mode}")
+            self.mode = mode
         self.match_id += 1
         self.match_status = "running"
         self.match_started_at = now
         self.match_ends_at = now + max(10.0, float(duration_s))
         self.last_scoreboard = []
+        self.team_caps = {1: 0, 2: 0}
+        # Assign / reset teams up front for team and ctf modes.
+        if self.mode in ("team", "ctf"):
+            pids = list(self.players.keys())
+            # Stable shuffle by hashing pid + match_id so it's reproducible per round.
+            pids.sort(key=lambda x: (hash((x, self.match_id))))
+            for i, pid in enumerate(pids):
+                self.players[pid].team = 1 if i % 2 == 0 else 2
+            self._next_team = 1
+        else:
+            for p in self.players.values():
+                p.team = 0
+        # CTF: place flags at each team's base.
+        if self.mode == "ctf":
+            self.flags = {
+                1: {"home_x": self.width * 0.08, "home_y": self.height / 2,
+                    "x": self.width * 0.08, "y": self.height / 2, "carrier": None},
+                2: {"home_x": self.width * 0.92, "home_y": self.height / 2,
+                    "x": self.width * 0.92, "y": self.height / 2, "carrier": None},
+            }
+        else:
+            self.flags = {}
         for p in self.players.values():
             p.kills = 0
             p.deaths = 0
@@ -597,7 +779,11 @@ class GameState:
             p.dots.clear()
             p.shield_amount = 0
             p.cooldowns.clear()
-            spawn = self._spawn_point()
+            p.has_flag_team = 0
+            p.stamina = STAMINA_MAX
+            p.sprinting = False
+            p.roll_ready_at = 0.0
+            spawn = self._spawn_point(p.team)
             p.x, p.y = spawn
         self.projectiles.clear()
         self.areas.clear()
@@ -649,6 +835,7 @@ class GameState:
                 "username": p.username,
                 "characterName": p.manifest.characterName,
                 "color": p.manifest.color,
+                "team": p.team,
                 "kills": p.kills,
                 "deaths": p.deaths,
                 "score": p.kills - p.deaths,
@@ -662,6 +849,81 @@ class GameState:
         out = self.events
         self.events = []
         return out
+
+    # --- CTF helpers ------------------------------------------------------
+
+    def _flags_public(self) -> List[dict]:
+        out = []
+        for team, f in self.flags.items():
+            out.append({
+                "team": team,
+                "x": round(f["x"], 2),
+                "y": round(f["y"], 2),
+                "homeX": round(f["home_x"], 2),
+                "homeY": round(f["home_y"], 2),
+                "carrier": f["carrier"],
+            })
+        return out
+
+    def _return_flag(self, team: int) -> None:
+        f = self.flags.get(team)
+        if f is None:
+            return
+        f["x"] = f["home_x"]
+        f["y"] = f["home_y"]
+        f["carrier"] = None
+
+    def _step_ctf(self, now: float) -> None:
+        if not self.flags:
+            return
+        # 1) Move carried flags to follow their carrier.
+        for team, f in self.flags.items():
+            cid = f["carrier"]
+            if cid is not None:
+                p = self.players.get(cid)
+                if p is None or not p.alive:
+                    self._return_flag(team)
+                    if p is not None:
+                        p.has_flag_team = 0
+                else:
+                    f["x"] = p.x
+                    f["y"] = p.y
+        # 2) Pickups + captures.
+        for p in self.players.values():
+            if not p.alive or p.team not in (1, 2):
+                continue
+            # Pickup enemy flag on touch.
+            for team, f in self.flags.items():
+                if team == p.team or f["carrier"] is not None:
+                    continue
+                dx = p.x - f["x"]
+                dy = p.y - f["y"]
+                rr = p.manifest.size / 2 + CTF_FLAG_RADIUS
+                if dx * dx + dy * dy <= rr * rr:
+                    f["carrier"] = p.pid
+                    p.has_flag_team = team
+                    self.events.append({
+                        "kind": "flag_pickup", "pid": p.pid, "team": team,
+                    })
+            # Capture: carrier brings enemy flag home (own base).
+            if p.has_flag_team:
+                own = self.flags.get(p.team)
+                if own is not None:
+                    dx = p.x - own["home_x"]
+                    dy = p.y - own["home_y"]
+                    if dx * dx + dy * dy <= CTF_BASE_RADIUS * CTF_BASE_RADIUS:
+                        captured_team = p.has_flag_team
+                        self.team_caps[p.team] = self.team_caps.get(p.team, 0) + 1
+                        self._return_flag(captured_team)
+                        p.has_flag_team = 0
+                        self.events.append({
+                            "kind": "flag_capture", "pid": p.pid,
+                            "team": p.team, "captured": captured_team,
+                            "score": self.team_caps[p.team],
+                        })
+                        if self.team_caps[p.team] >= CTF_CAPTURES_TO_WIN:
+                            self.end_round()
+                            return
 
 
 # ---------------------------------------------------------------------------

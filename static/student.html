@@ -6,15 +6,28 @@
   <title>Student Editor · Classroom IO Game</title>
   <link rel="stylesheet" href="/static/styles.css" />
 </head>
-<body>
-  <main class="page editor">
-    <h1>Build your character</h1>
-    <p>Edit the JavaScript below. Your <code>buildCharacter()</code> function
-       must return an object describing your character. Click
-       <strong>Run &amp; Validate</strong>, then <strong>Join Game</strong>.</p>
-    <p>New here? Read the <a href="/manual">Power Manual</a> first — it lists
-       every cast kind and effect with examples. Try a
-       <a href="/challenges">challenge card</a> for inspiration.</p>
+<body class="splash-bg">
+  <div class="splash-stars" aria-hidden="true"></div>
+  <header class="arena-topbar">
+    <div class="brand-pill"><span class="brand-dot"></span><span>Character editor</span></div>
+    <nav class="topnav">
+      <a href="/" class="tnav-link">Home</a>
+      <a href="/manual" class="tnav-link">Manual</a>
+      <a href="/challenges" class="tnav-link">Challenges</a>
+      <a href="/game" class="tnav-link tnav-primary">Open arena →</a>
+    </nav>
+  </header>
+
+  <main class="page editor editor-pad">
+    <div class="editor-intro">
+      <h1>Build your character</h1>
+      <p>Edit the JavaScript below. Your <code>buildCharacter()</code> function
+         must return an object describing your character. Click
+         <strong>Run &amp; Validate</strong>, then <strong>Join Game</strong>.</p>
+      <p>New here? Read the <a href="/manual">Power Manual</a> first — it lists
+         every cast kind and effect with examples. Try a
+         <a href="/challenges">challenge card</a> for inspiration.</p>
+    </div>
 
     <div class="editor-grid">
       <section class="panel">
@@ -32,6 +45,36 @@
 
         <label for="code">character.js</label>
         <textarea id="code" spellcheck="false"></textarea>
+
+        <details class="sprite-import" open>
+          <summary>🎨 Add custom pixel art (PiskelApp)</summary>
+          <div class="sprite-help">
+            <p>Draw a sprite at <a href="https://www.piskelapp.com/" target="_blank" rel="noopener">piskelapp.com</a>,
+               export as <strong>PNG</strong>, then drop the file here. We turn it into a small
+               <code>data:</code> string you can paste into your <code>sprites</code> block.</p>
+            <div class="sprite-row">
+              <label class="sprite-pick">
+                <span>Slot:</span>
+                <select id="spriteSlot">
+                  <option value="idle">idle</option>
+                  <option value="walk">walk</option>
+                  <option value="attack">attack</option>
+                  <option value="hurt">hurt</option>
+                </select>
+              </label>
+              <input id="spriteFile" type="file" accept="image/png,image/gif" multiple />
+            </div>
+            <pre id="spriteOut" class="sprite-out">Choose 1–4 PNGs (≤16 KB each). Snippet appears here.</pre>
+            <div class="sprite-actions">
+              <button type="button" id="spriteCopyBtn" disabled>📋 Copy snippet to clipboard</button>
+              <button type="button" id="spriteInsertBtn" disabled>↳ Insert into editor</button>
+            </div>
+            <p class="hint">In your character return object add <code>sprites: { ... }</code>. Each
+               slot is an array of 1–4 frames; <code>walk</code> animates while moving,
+               <code>attack</code> on power use, <code>hurt</code> on damage, <code>idle</code> otherwise.
+               Total payload limit: 64&nbsp;KB.</p>
+          </div>
+        </details>
 
         <div class="row">
           <button id="runBtn" type="button">Run &amp; Validate</button>
@@ -69,13 +112,11 @@
             <code>shield</code>, or <code>heal</code>.</li>
           <li>See the <a href="/manual">Power Manual</a> for every field and
             its allowed range.</li>
-          <li>Press <code>WASD</code> or arrow keys to move; press your
-            power's <code>key</code> to fire.</li>
+          <li>Press <code>WASD</code> or arrow keys to move; <code>Shift</code>
+            sprints, <code>C</code> dodge-rolls, your power's <code>key</code> fires.</li>
         </ul>
       </section>
     </div>
-
-    <p class="footer"><a href="/">&larr; Home</a></p>
   </main>
 
   <script src="/static/student_editor.js"></script>

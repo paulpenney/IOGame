@@ -23,8 +23,15 @@
       <label>Round length (sec)
         <input id="dur" type="number" value="120" min="20" max="900" style="max-width: 100px" />
       </label>
+      <label>Mode
+        <select id="mode">
+          <option value="ffa">Solo (FFA)</option>
+          <option value="team">Team match</option>
+          <option value="ctf">Capture the Flag</option>
+        </select>
+      </label>
       <div>
-        <button class="tbtn" onclick="api('start_round', {durationSec: +dur.value})">Start round</button>
+        <button class="tbtn" onclick="api('start_round', {durationSec: +dur.value, mode: document.getElementById('mode').value})">Start round</button>
         <button class="tbtn" onclick="api('end_round')">End round</button>
         <button class="tbtn" onclick="api('reset')">Reset arena</button>
         <button class="tbtn" onclick="api('clear_projectiles')">Clear projectiles</button>
@@ -39,8 +46,8 @@
       <section class="panel">
         <h2>Live scoreboard <span id="matchInfo" style="color:var(--muted);font-size:14px;font-weight:400;"></span></h2>
         <table class="scoreboard">
-          <thead><tr><th>#</th><th>Name</th><th>Character</th><th>K</th><th>D</th><th>Score</th><th></th></tr></thead>
-          <tbody id="scoreBody"><tr><td colspan="7" style="color:var(--muted)">no players yet</td></tr></tbody>
+          <thead><tr><th>#</th><th>Name</th><th>Char</th><th>Team</th><th>K</th><th>D</th><th>Score</th><th></th></tr></thead>
+          <tbody id="scoreBody"><tr><td colspan="8" style="color:var(--muted)">no players yet</td></tr></tbody>
         </table>
       </section>
 
@@ -100,21 +107,29 @@
         const j = await r.json();
         const m = j.match;
         document.getElementById('matchInfo').textContent =
-          ` — ${m.status} (round #${m.id}, ${m.remaining}s left, ${j.players.length} players)`;
+          ` — ${m.status} · ${m.mode} · round #${m.id} · ${m.remaining}s · ${j.players.length} players` +
+          (m.teamScores && (m.mode === 'team' || m.mode === 'ctf')
+            ? ` · Blue ${m.teamScores['1'] ?? 0}-${m.teamScores['2'] ?? 0} Red` : '');
         document.getElementById('safeMode').checked = !!m.safeMode;
+        if (document.activeElement !== document.getElementById('mode')) {
+          document.getElementById('mode').value = m.mode || 'ffa';
+        }
 
         const tbody = document.getElementById('scoreBody');
         const rows = m.scoreboard;
         if (!rows.length) {
-          tbody.innerHTML = '<tr><td colspan="7" style="color:var(--muted)">no players yet</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="8" style="color:var(--muted)">no players yet</td></tr>';
         } else {
-          tbody.innerHTML = rows.map((r, i) =>
-            `<tr><td>${i+1}</td>
+          tbody.innerHTML = rows.map((r, i) => {
+            const teamLabel = r.team === 1 ? '<span style="color:#5dd6ff">Blue</span>'
+              : r.team === 2 ? '<span style="color:#ff7a7a">Red</span>' : '—';
+            return `<tr><td>${i+1}</td>
                  <td><span class="swatch" style="background:${r.color}"></span>${escape(r.username)}</td>
                  <td>${escape(r.characterName)}</td>
+                 <td>${teamLabel}</td>
                  <td>${r.kills}</td><td>${r.deaths}</td><td>${r.score}</td>
-                 <td><button class="tbtn danger" onclick="kick('${r.pid}')">Kick</button></td></tr>`
-          ).join('');
+                 <td><button class="tbtn danger" onclick="kick('${r.pid}')">Kick</button></td></tr>`;
+          }).join('');
         }
 
         const pending = j.pending || [];

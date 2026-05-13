@@ -9,7 +9,23 @@
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   const statusEl = document.getElementById('status');
-  const scoreboardEl = document.getElementById('scoreboard');
+  const killFeedEl = document.getElementById('killFeed');
+  const playerCardEl = document.getElementById('playerCard');
+  const pcPortrait = document.getElementById('pcPortrait');
+  const pcName = document.getElementById('pcName');
+  const pcChar = document.getElementById('pcChar');
+  const hpFill = document.getElementById('hpFill');
+  const hpLabel = document.getElementById('hpLabel');
+  const stamFill = document.getElementById('stamFill');
+  const hotbarEl = document.getElementById('hotbar');
+  const bannerEl = document.getElementById('banner');
+
+  // Floating damage numbers and particle effects.
+  const floaters = [];   // { x, y, text, color, born, ttl, vy }
+  const ripples = [];    // { x, y, color, born, ttl, r0, r1 }
+  // Health-tracking for hit-flash effect (no need to rely on events).
+  const lastHealth = Object.create(null);
+  const flashes = Object.create(null);   // pid -> until-timestamp
 
   function setStatus(text, cls) {
     statusEl.textContent = text;
@@ -84,6 +100,9 @@
         setStatus('join error: ' + msg.error, 'error');
       } else if (msg.type === 'state') {
         snapshot = msg.payload;
+        detectHealthChanges();
+      } else if (msg.type === 'event') {
+        for (const e of (msg.payload || [])) handleEvent(e);
       }
     });
     ws.addEventListener('close', () => {
@@ -105,6 +124,16 @@
     'arrowright': 'right', 'd': 'right',
   };
 
+  // Mouse position (in canvas/viewport pixels) — used for aim direction.
+  // Default to "looking right" so very early frames don't snap to (0,0).
+  const mouse = { x: 0, y: 0, ready: false };
+  canvas.addEventListener('mousemove', (ev) => {
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = ev.clientX - rect.left;
+    mouse.y = ev.clientY - rect.top;
+    mouse.ready = true;
+  });
+
   function normalizeKey(ev) {
     let k = (ev.key || '').toLowerCase();
     if (k === ' ') k = 'space';
@@ -120,11 +149,22 @@
 
   window.addEventListener('keydown', (ev) => {
     const k = normalizeKey(ev);
-    if (MOVE_KEYS[k] || powerKeysForMe().includes(k)) ev.preventDefault();
+    const isMove = !!MOVE_KEYS[k];
+    const isPower = powerKeysForMe().includes(k);
+    const isSprint = (k === 'shift');
+    const isRoll = (k === 'c');
+    if (isMove || isPower || isSprint || isRoll) ev.preventDefault();
     if (keys[k]) return;
     keys[k] = true;
-    if (powerKeysForMe().includes(k) && ws && ws.readyState === 1) {
+    if (isPower && ws && ws.readyState === 1) {
       ws.send(JSON.stringify({ type: 'fire', payload: { key: k } }));
+      flashHotbarSlot(k);
+      // Also trigger attack-sprite animation locally for our own player.
+      const a = (playerAnim[myPid] = playerAnim[myPid] || {state:'idle',frame:0,lastT:0,lastDx:0,lastDy:0});
+      a.attackUntil = performance.now() + 260;
+    }
+    if (isRoll && ws && ws.readyState === 1) {
+      ws.send(JSON.stringify({ type: 'roll' }));
     }
   });
   window.addEventListener('keyup', (ev) => {
@@ -143,7 +183,24 @@
       else if (dir === 'left') mx -= 1;
       else if (dir === 'right') mx += 1;
     }
-    ws.send(JSON.stringify({ type: 'input', payload: { mx, my } }));
+    // Aim from mouse position relative to my player on screen.
+    let ax = null, ay = null;
+    if (mouse.ready) {
+      const me = snapshot.players.find(p => p.pid === myPid);
+      if (me) {
+        const off = cameraOffset();
+        const sx = me.x + off.ox;
+        const sy = me.y + off.oy;
+        const dx = mouse.x - sx;
+        const dy = mouse.y - sy;
+        const len = Math.hypot(dx, dy);
+        if (len > 1) { ax = dx / len; ay = dy / len; }
+      }
+    }
+    ws.send(JSON.stringify({
+      type: 'input',
+      payload: { mx, my, ax, ay, sprint: !!keys['shift'] },
+    }));
   }, 1000 / 30);
 
   // --- Camera + Rendering -------------------------------------------------
@@ -178,20 +235,73 @@
     return { ox, oy };
   }
 
+  const stars = (() => {
+    const out = [];
+    let s = 0x9e3779b1;
+    function rnd() { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; }
+    for (let i = 0; i < 220; i++) {
+      out.push({ x: rnd() * 2400, y: rnd() * 1600, r: rnd() * 1.4 + 0.3, a: rnd() * 0.6 + 0.2 });
+    }
+    return out;
+  })();
+
+  // ----- Sprite cache + per-player animation state -----
+  const spriteCache = Object.create(null); // dataURI -> HTMLImageElement
+  const playerAnim = Object.create(null);  // pid -> {state, frame, lastT, lastX, lastY, attackUntil, hurtUntil}
+  function getSprite(uri) {
+    let img = spriteCache[uri];
+    if (!img) {
+      img = new Image();
+      img.src = uri;
+      spriteCache[uri] = img;
+    }
+    return img.complete && img.naturalWidth > 0 ? img : null;
+  }
+  function pickAnimState(p, anim, now) {
+    const sprites = p.sprites || {};
+    // Trigger transient states from events handled elsewhere.
+    if (anim.hurtUntil && now < anim.hurtUntil && sprites.hurt) return 'hurt';
+    if (anim.attackUntil && now < anim.attackUntil && sprites.attack) return 'attack';
+    const moving = (anim.lastDx * anim.lastDx + anim.lastDy * anim.lastDy) > 4;
+    if (moving && sprites.walk) return 'walk';
+    if (sprites.idle) return 'idle';
+    if (sprites.walk) return 'walk';
+    return null;
+  }
+
   function drawBackground(ox, oy) {
     const { w, h } = viewportSize();
-    // Dark space outside the world.
-    ctx.fillStyle = '#05060a';
+    // Vignette outside the world.
+    const grad = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.2,
+                                          w / 2, h / 2, Math.max(w, h) * 0.8);
+    grad.addColorStop(0, '#13162a');
+    grad.addColorStop(1, '#03040a');
+    ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, h);
-    // Arena floor.
-    ctx.fillStyle = '#11142a';
+    // Stars (parallax 0.3x camera).
+    ctx.fillStyle = '#ffffff';
+    for (const s of stars) {
+      ctx.globalAlpha = s.a;
+      const sx = ox * 0.3 + s.x;
+      const sy = oy * 0.3 + s.y;
+      if (sx < -2 || sy < -2 || sx > w + 2 || sy > h + 2) continue;
+      ctx.beginPath(); ctx.arc(sx, sy, s.r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // Arena floor (slightly translucent dark hex grid).
+    ctx.fillStyle = 'rgba(20, 24, 50, 0.85)';
     ctx.fillRect(ox, oy, world.width, world.height);
-    // Bright grid (visible against the floor).
-    ctx.strokeStyle = '#2a3158';
+    // Soft inner glow on the arena edges.
+    const eg = ctx.createLinearGradient(ox, oy, ox, oy + world.height);
+    eg.addColorStop(0, 'rgba(93,214,255,0.06)');
+    eg.addColorStop(1, 'rgba(255,177,59,0.04)');
+    ctx.fillStyle = eg;
+    ctx.fillRect(ox, oy, world.width, world.height);
+    // Grid.
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
     ctx.lineWidth = 1;
     const step = 80;
     const x0 = ox, y0 = oy, x1 = ox + world.width, y1 = oy + world.height;
-    // Only draw lines within the viewport for speed.
     const startX = Math.max(0, Math.floor((-ox) / step) * step) + ox;
     for (let x = startX; x <= Math.min(w, x1); x += step) {
       ctx.beginPath(); ctx.moveTo(x, Math.max(0, y0)); ctx.lineTo(x, Math.min(h, y1)); ctx.stroke();
@@ -200,10 +310,14 @@
     for (let y = startY; y <= Math.min(h, y1); y += step) {
       ctx.beginPath(); ctx.moveTo(Math.max(0, x0), y); ctx.lineTo(Math.min(w, x1), y); ctx.stroke();
     }
-    // World boundary outline.
-    ctx.strokeStyle = '#ffb13b';
+    // Glowing world boundary.
+    ctx.save();
+    ctx.shadowColor = 'rgba(255, 177, 59, 0.5)';
+    ctx.shadowBlur = 14;
+    ctx.strokeStyle = 'rgba(255, 177, 59, 0.85)';
     ctx.lineWidth = 2;
     ctx.strokeRect(ox + 1, oy + 1, world.width - 2, world.height - 2);
+    ctx.restore();
   }
 
   function drawAreas(ox, oy) {
@@ -236,21 +350,44 @@
 
   function drawProjectiles(ox, oy) {
     for (const pr of snapshot.projectiles || []) {
+      // Soft glow halo + bright core.
+      ctx.save();
+      ctx.shadowColor = pr.color;
+      ctx.shadowBlur = 14;
       ctx.fillStyle = pr.color;
       ctx.beginPath(); ctx.arc(ox + pr.x, oy + pr.y, pr.radius, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.beginPath(); ctx.arc(ox + pr.x, oy + pr.y, pr.radius * 0.45, 0, Math.PI * 2); ctx.fill();
     }
   }
 
   function drawPlayers(ox, oy) {
+    const now = performance.now();
     for (const p of snapshot.players || []) {
       const r = p.size / 2;
       const px = ox + p.x, py = oy + p.y;
       ctx.globalAlpha = p.alive ? 1 : 0.25;
+
+      // Shadow disc on the floor.
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.beginPath(); ctx.ellipse(px, py + r * 0.55, r * 0.85, r * 0.32, 0, 0, Math.PI * 2); ctx.fill();
+
+      // Team ring (only in team / ctf modes).
+      if (p.team === 1 || p.team === 2) {
+        ctx.strokeStyle = p.team === 1 ? '#5dd6ff' : '#ff7a7a';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(px, py, r + 9, 0, Math.PI * 2); ctx.stroke();
+      }
       // Status auras.
       if (p.status && p.status.shielded) {
-        ctx.strokeStyle = '#a0e6ff';
+        ctx.save();
+        ctx.shadowColor = '#a0e6ff';
+        ctx.shadowBlur = 12;
+        ctx.strokeStyle = 'rgba(160,230,255,0.9)';
         ctx.lineWidth = 3;
         ctx.beginPath(); ctx.arc(px, py, r + 6, 0, Math.PI * 2); ctx.stroke();
+        ctx.restore();
       }
       if (p.status && p.status.invulnerable) {
         ctx.strokeStyle = '#ffffff';
@@ -259,12 +396,84 @@
         ctx.beginPath(); ctx.arc(px, py, r + 3, 0, Math.PI * 2); ctx.stroke();
         ctx.setLineDash([]);
       }
-      // Body.
-      ctx.fillStyle = p.color;
-      ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
+
+      // Body — sprite if provided, otherwise a radial-gradient disc.
+      const anim = (playerAnim[p.pid] = playerAnim[p.pid] || {
+        state: 'idle', frame: 0, lastT: now, lastDx: 0, lastDy: 0,
+      });
+      const dx = p.x - (anim.lastX != null ? anim.lastX : p.x);
+      const dy = p.y - (anim.lastY != null ? anim.lastY : p.y);
+      anim.lastDx = dx; anim.lastDy = dy;
+      anim.lastX = p.x; anim.lastY = p.y;
+      let drewSprite = false;
+      if (p.sprites) {
+        const state = pickAnimState(p, anim, now);
+        const frames = state ? p.sprites[state] : null;
+        if (frames && frames.length) {
+          // Advance frame at ~6 fps.
+          if (anim.state !== state) { anim.state = state; anim.frame = 0; anim.lastT = now; }
+          if (now - anim.lastT > 160) {
+            anim.lastT = now;
+            anim.frame = (anim.frame + 1) % frames.length;
+          }
+          const img = getSprite(frames[anim.frame % frames.length]);
+          if (img) {
+            const draw = r * 2.4; // sprite slightly larger than hitbox
+            ctx.save();
+            // Flip horizontally based on facing.
+            if (p.facingX < -0.05) {
+              ctx.translate(px, py); ctx.scale(-1, 1);
+              ctx.drawImage(img, -draw / 2, -draw / 2, draw, draw);
+            } else {
+              ctx.drawImage(img, px - draw / 2, py - draw / 2, draw, draw);
+            }
+            ctx.restore();
+            drewSprite = true;
+          }
+        }
+      }
+      if (!drewSprite) {
+        const bg = ctx.createRadialGradient(px - r * 0.35, py - r * 0.45, r * 0.1, px, py, r);
+        bg.addColorStop(0, lighten(p.color, 0.5));
+        bg.addColorStop(0.6, p.color);
+        bg.addColorStop(1, darken(p.color, 0.4));
+        ctx.save();
+        if (p.pid === myPid) {
+          ctx.shadowColor = p.color;
+          ctx.shadowBlur = 16;
+        }
+        ctx.fillStyle = bg;
+        ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+
+        // Outline ring.
+        ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.stroke();
+      }
+
+      // Hit flash overlay.
+      if (flashes[p.pid] && now < flashes[p.pid]) {
+        const k = (flashes[p.pid] - now) / 130;
+        ctx.fillStyle = `rgba(255,255,255,${0.55 * k})`;
+        ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
+      } else if (flashes[p.pid]) { delete flashes[p.pid]; }
+
+      // Sprint dust (cheap).
+      if (p.sprinting && p.alive) {
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+        for (let i = 0; i < 2; i++) {
+          const ang = Math.atan2(-p.facingY, -p.facingX) + (Math.random() - 0.5) * 0.6;
+          const d = r * (0.9 + Math.random() * 0.5);
+          ctx.beginPath();
+          ctx.arc(px + Math.cos(ang) * d, py + Math.sin(ang) * d, 1.5 + Math.random(), 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
       // Slowed/stunned tint.
       if (p.status && (p.status.slowed || p.status.stunned)) {
-        ctx.fillStyle = p.status.stunned ? '#ffd24a55' : '#5dd6ff55';
+        ctx.fillStyle = p.status.stunned ? 'rgba(255,210,74,0.33)' : 'rgba(93,214,255,0.33)';
         ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
       }
       // Burning marker.
@@ -277,29 +486,107 @@
           ctx.fill();
         }
       }
-      // Facing tick.
-      ctx.strokeStyle = '#ffffffaa';
-      ctx.lineWidth = 2;
+      // Facing tick — the "barrel" of a tank.
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
       ctx.beginPath();
-      ctx.moveTo(px, py);
-      ctx.lineTo(px + p.facingX * (r + 8), py + p.facingY * (r + 8));
+      ctx.moveTo(px + p.facingX * r * 0.4, py + p.facingY * r * 0.4);
+      ctx.lineTo(px + p.facingX * (r + 10), py + p.facingY * (r + 10));
       ctx.stroke();
+      ctx.lineCap = 'butt';
+
+      // Carrying-flag indicator.
+      if (p.hasFlag) {
+        const fc = p.hasFlag === 1 ? '#5dd6ff' : '#ff7a7a';
+        ctx.fillStyle = fc;
+        ctx.strokeStyle = '#e7e9f3';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(px + r + 4, py - r - 12); ctx.lineTo(px + r + 4, py - r + 4); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(px + r + 4, py - r - 12);
+        ctx.lineTo(px + r + 18, py - r - 8);
+        ctx.lineTo(px + r + 4, py - r - 4);
+        ctx.closePath(); ctx.fill();
+      }
 
       ctx.globalAlpha = 1;
-      // Name + character name.
-      ctx.fillStyle = '#e7e9f3';
-      ctx.font = '12px sans-serif';
+      // Name label with subtle shadow.
+      ctx.font = '600 12px -apple-system,BlinkMacSystemFont,sans-serif';
       ctx.textAlign = 'center';
-      const label = p.username + ' · ' + p.characterName + (p.pid === myPid ? ' (you)' : '');
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      const label = p.username + (p.pid === myPid ? ' (you)' : '');
+      ctx.fillText(label, px + 1, py - r - 13);
+      ctx.fillStyle = '#e7e9f3';
       ctx.fillText(label, px, py - r - 14);
-      // HP bar.
-      const w = Math.max(40, r * 2);
+
+      // HP bar (above name).
+      const w = Math.max(40, r * 2.4);
       const hpRatio = Math.max(0, p.health) / Math.max(1, p.maxHealth);
-      ctx.fillStyle = '#222a3e';
-      ctx.fillRect(px - w / 2, py - r - 10, w, 5);
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(px - w / 2 - 1, py - r - 28, w + 2, 6);
       ctx.fillStyle = hpRatio > 0.4 ? '#51d88a' : (hpRatio > 0.2 ? '#ffb13b' : '#ff5a5a');
-      ctx.fillRect(px - w / 2, py - r - 10, w * hpRatio, 5);
+      ctx.fillRect(px - w / 2, py - r - 27, w * hpRatio, 4);
     }
+  }
+
+  function lighten(hex, amt) { return mixHex(hex, '#ffffff', amt); }
+  function darken(hex, amt) { return mixHex(hex, '#000000', amt); }
+  function mixHex(a, b, t) {
+    const pa = parseHex(a), pb = parseHex(b);
+    const r = clamp255(Math.round(pa[0] + (pb[0] - pa[0]) * t));
+    const g = clamp255(Math.round(pa[1] + (pb[1] - pa[1]) * t));
+    const bl = clamp255(Math.round(pa[2] + (pb[2] - pa[2]) * t));
+    return `rgb(${r},${g},${bl})`;
+  }
+  function clamp255(n) { if (!isFinite(n)) return 128; return Math.max(0, Math.min(255, n | 0)); }
+  function parseHex(c) {
+    if (typeof c !== 'string') return [128, 128, 128];
+    if (c[0] === '#') c = c.slice(1);
+    if (c.length === 3) c = c.split('').map(x => x + x).join('');
+    if (c.length !== 6) return [128, 128, 128];
+    const r = parseInt(c.slice(0, 2), 16);
+    const g = parseInt(c.slice(2, 4), 16);
+    const b = parseInt(c.slice(4, 6), 16);
+    if (!isFinite(r) || !isFinite(g) || !isFinite(b)) return [128, 128, 128];
+    return [r, g, b];
+  }
+
+  function drawFloaters(ox, oy) {
+    const now = performance.now();
+    for (let i = floaters.length - 1; i >= 0; i--) {
+      const f = floaters[i];
+      const age = now - f.born;
+      if (age >= f.ttl) { floaters.splice(i, 1); continue; }
+      const t = age / f.ttl;
+      ctx.globalAlpha = 1 - t;
+      ctx.font = '700 16px -apple-system,BlinkMacSystemFont,sans-serif';
+      ctx.textAlign = 'center';
+      const x = ox + f.x + (f.dx || 0) * t;
+      const y = oy + f.y + (f.vy || -32) * (age / 1000);
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillText(f.text, x + 1, y + 1);
+      ctx.fillStyle = f.color;
+      ctx.fillText(f.text, x, y);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawRipples(ox, oy) {
+    const now = performance.now();
+    for (let i = ripples.length - 1; i >= 0; i--) {
+      const r = ripples[i];
+      const age = now - r.born;
+      if (age >= r.ttl) { ripples.splice(i, 1); continue; }
+      const t = age / r.ttl;
+      ctx.globalAlpha = 1 - t;
+      ctx.strokeStyle = r.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(ox + r.x, oy + r.y, r.r0 + (r.r1 - r.r0) * t, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
   }
 
   function drawMinimap() {
@@ -323,20 +610,163 @@
     ctx.globalAlpha = 1;
   }
 
-  function drawScoreboard() {
-    const players = (snapshot.players || []).slice().sort((a, b) => b.kills - a.kills);
-    scoreboardEl.innerHTML = '';
-    for (const p of players) {
-      const li = document.createElement('li');
-      const sw = document.createElement('span');
-      sw.className = 'swatch';
-      sw.style.background = p.color;
-      li.appendChild(sw);
-      li.appendChild(document.createTextNode(
-        p.username + ' (' + p.characterName + ') — K:' + p.kills + ' D:' + p.deaths
-      ));
-      scoreboardEl.appendChild(li);
+  // --- Event stream + HUD overlays ---------------------------------------
+
+  function detectHealthChanges() {
+    const now = performance.now();
+    for (const p of snapshot.players || []) {
+      const prev = lastHealth[p.pid];
+      if (prev !== undefined && p.health < prev - 0.01) {
+        const dmg = Math.round(prev - p.health);
+        floaters.push({
+          x: p.x, y: p.y - p.size / 2 - 4,
+          text: '-' + dmg, color: '#ff7a7a',
+          born: now, ttl: 900,
+          vy: -32, // px/s upward
+          dx: (Math.random() - 0.5) * 20,
+        });
+        flashes[p.pid] = now + 130;
+        const a = (playerAnim[p.pid] = playerAnim[p.pid] || {state:'idle',frame:0,lastT:0,lastDx:0,lastDy:0});
+        a.hurtUntil = now + 260;
+      } else if (prev !== undefined && p.health > prev + 0.01) {
+        const heal = Math.round(p.health - prev);
+        floaters.push({
+          x: p.x, y: p.y - p.size / 2 - 4,
+          text: '+' + heal, color: '#7affad',
+          born: now, ttl: 900, vy: -28, dx: (Math.random() - 0.5) * 20,
+        });
+      }
+      lastHealth[p.pid] = p.health;
     }
+    // Drop tracking for players that left.
+    const ids = new Set((snapshot.players || []).map(p => p.pid));
+    for (const id in lastHealth) if (!ids.has(id)) delete lastHealth[id];
+  }
+
+  function handleEvent(e) {
+    const playersById = Object.create(null);
+    for (const p of snapshot.players || []) playersById[p.pid] = p;
+    if (e.kind === 'death') {
+      const victim = playersById[e.pid];
+      const killer = playersById[e.by];
+      addKillRow(killer, victim);
+    } else if (e.kind === 'flag_pickup') {
+      const carrier = playersById[e.pid];
+      if (carrier) showBanner(`${carrier.username} grabbed the ${e.team === 1 ? 'Blue' : 'Red'} flag!`, 1500);
+    } else if (e.kind === 'flag_capture') {
+      const scorer = playersById[e.pid];
+      if (scorer) showBanner(`${e.team === 1 ? 'Blue' : 'Red'} captured! (${e.score})`, 1800);
+    } else if (e.kind === 'roll') {
+      const p = playersById[e.pid];
+      if (p) ripples.push({
+        x: p.x, y: p.y, color: p.color,
+        born: performance.now(), ttl: 350,
+        r0: p.size / 2, r1: p.size,
+      });
+    } else if (e.kind === 'round_start') {
+      showBanner(`Round #${e.id} — fight!`, 1400);
+    } else if (e.kind === 'round_end') {
+      showBanner('Round over', 1800);
+    }
+  }
+
+  function addKillRow(killer, victim) {
+    if (!victim) return;
+    const row = document.createElement('div');
+    row.className = 'kill-row';
+    if (killer && killer.pid !== victim.pid) {
+      row.innerHTML =
+        `<span class="kf-name" style="color:${killer.color}">${escapeHtml(killer.username)}</span>` +
+        `<span class="kf-icon">⚔</span>` +
+        `<span class="kf-name" style="color:${victim.color}">${escapeHtml(victim.username)}</span>`;
+    } else {
+      row.innerHTML =
+        `<span class="kf-name" style="color:${victim.color}">${escapeHtml(victim.username)}</span>` +
+        `<span class="kf-icon">☠</span>`;
+    }
+    killFeedEl.appendChild(row);
+    setTimeout(() => row.remove(), 5200);
+    // Cap at ~6 rows.
+    while (killFeedEl.children.length > 6) killFeedEl.firstChild.remove();
+  }
+
+  let bannerTimer = 0;
+  function showBanner(text, ms) {
+    bannerEl.textContent = text;
+    bannerEl.classList.add('show');
+    clearTimeout(bannerTimer);
+    bannerTimer = setTimeout(() => bannerEl.classList.remove('show'), ms || 1500);
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\'':'&#39;','"':'&quot;'}[c]));
+  }
+
+  // Hotbar DOM rebuild (only when power list changes).
+  let hotbarSig = '';
+  function updateHotbar(me) {
+    const sig = me ? me.powers.map(p => p.key + ':' + p.name + ':' + p.cast.color).join('|') : '';
+    if (sig !== hotbarSig) {
+      hotbarSig = sig;
+      hotbarEl.innerHTML = '';
+      if (me) {
+        for (const pw of me.powers) {
+          const slot = document.createElement('div');
+          slot.className = 'hb-slot';
+          slot.dataset.key = pw.key;
+          slot.innerHTML =
+            `<span class="hb-color" style="color:${pw.cast.color};background:${pw.cast.color}"></span>` +
+            `<span class="hb-key">${pw.key === 'space' ? '␣' : escapeHtml(pw.key.toUpperCase())}</span>` +
+            `<span class="hb-name">${escapeHtml(pw.name)}</span>` +
+            `<div class="hb-cd-mask" style="height:0%"></div>`;
+          hotbarEl.appendChild(slot);
+        }
+      }
+    }
+    // Cooldown overlay updates every frame from snapshot. The server doesn't
+    // expose remaining cooldowns directly, so we estimate from a local map.
+    if (!me) return;
+    const slots = hotbarEl.querySelectorAll('.hb-slot');
+    slots.forEach(slot => {
+      const k = slot.dataset.key;
+      const due = cooldownDueAt[k] || 0;
+      const totalMs = cooldownTotal[k] || 1;
+      const remain = Math.max(0, due - performance.now());
+      const ratio = Math.min(1, remain / totalMs);
+      slot.querySelector('.hb-cd-mask').style.height = (ratio * 100) + '%';
+    });
+  }
+  // Estimated local cooldowns (server is authoritative; this is purely visual).
+  const cooldownDueAt = Object.create(null);
+  const cooldownTotal = Object.create(null);
+  function flashHotbarSlot(k) {
+    const me = (snapshot.players || []).find(p => p.pid === myPid);
+    if (!me) return;
+    const pw = (me.powers || []).find(p => p.key === k);
+    if (!pw) return;
+    cooldownDueAt[k] = performance.now() + pw.cooldownMs;
+    cooldownTotal[k] = pw.cooldownMs;
+    const slot = hotbarEl.querySelector(`.hb-slot[data-key="${CSS.escape(k)}"]`);
+    if (slot) {
+      slot.classList.add('fired');
+      setTimeout(() => slot.classList.remove('fired'), 100);
+    }
+  }
+
+  function updatePlayerCard(me) {
+    if (!me) { playerCardEl.classList.add('hidden'); return; }
+    playerCardEl.classList.remove('hidden');
+    pcPortrait.style.background = me.color;
+    pcPortrait.style.color = me.color;
+    pcName.textContent = me.username;
+    pcChar.textContent = me.characterName;
+    const hpRatio = Math.max(0, me.health) / Math.max(1, me.maxHealth);
+    hpFill.style.width = (hpRatio * 100) + '%';
+    hpFill.classList.toggle('warn', hpRatio <= 0.4 && hpRatio > 0.2);
+    hpFill.classList.toggle('crit', hpRatio <= 0.2);
+    hpLabel.textContent = `${Math.max(0, Math.round(me.health))} / ${me.maxHealth}`;
+    const stam = me.stamina != null ? me.stamina : 100;
+    stamFill.style.width = stam + '%';
   }
 
   function drawMatchHud() {
@@ -346,20 +776,30 @@
       hud = document.createElement('div');
       hud.id = 'matchHud';
       hud.className = 'match-hud';
-      const wrap = document.querySelector('.arena-wrap') || canvas.parentNode || document.body;
+      const wrap = document.getElementById('stage') || document.querySelector('.arena-wrap') || canvas.parentNode || document.body;
       if (getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
       wrap.appendChild(hud);
     }
     if (!m) { hud.textContent = ''; return; }
+    const modeLabel = ({ ffa: 'Solo', team: 'Teams', ctf: 'Capture the Flag' })[m.mode] || '';
+    const ts = m.teamScores || {};
+    const teamSuffix = (m.mode === 'team' || m.mode === 'ctf')
+      ? `  ·  Blue ${ts['1'] ?? 0} – Red ${ts['2'] ?? 0}` : '';
     if (m.status === 'running') {
       const s = Math.floor(m.remaining);
-      hud.textContent = `Round #${m.id} — ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+      hud.textContent = `${modeLabel}  ·  Round #${m.id}  ·  ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}${teamSuffix}`;
       hud.style.color = 'var(--text)';
     } else if (m.status === 'ended') {
-      const winner = (m.lastScoreboard && m.lastScoreboard[0]) || null;
-      hud.textContent = winner
-        ? `Round over — winner: ${winner.username} (${winner.score} pts)`
-        : 'Round over';
+      let result = 'Round over';
+      if (m.mode === 'ctf' || m.mode === 'team') {
+        const a = ts['1'] ?? 0, b = ts['2'] ?? 0;
+        const winner = a === b ? 'Tie' : (a > b ? 'Blue team wins' : 'Red team wins');
+        result = `Round over — ${winner} (${a}–${b})`;
+      } else {
+        const w = (m.lastScoreboard && m.lastScoreboard[0]) || null;
+        if (w) result = `Round over — winner: ${w.username} (${w.score} pts)`;
+      }
+      hud.textContent = result;
       hud.style.color = 'var(--accent)';
     } else {
       hud.textContent = 'Lobby — waiting for teacher to start a round';
@@ -367,16 +807,48 @@
     }
   }
 
+  function drawCtf(ox, oy) {
+    if (snapshot.mode !== 'ctf') return;
+    const flags = snapshot.flags || [];
+    for (const f of flags) {
+      const color = f.team === 1 ? '#5dd6ff' : '#ff7a7a';
+      // Base zone at home position.
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = 0.45;
+      ctx.lineWidth = 3;
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath(); ctx.arc(ox + f.homeX, oy + f.homeY, 80, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+      // Flag itself (a triangle on a pole).
+      const fx = ox + f.x, fy = oy + f.y;
+      ctx.strokeStyle = '#e7e9f3';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(fx, fy - 22); ctx.lineTo(fx, fy + 6); ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(fx, fy - 22);
+      ctx.lineTo(fx + 16, fy - 16);
+      ctx.lineTo(fx, fy - 10);
+      ctx.closePath(); ctx.fill();
+    }
+  }
+
   function loop() {
+    const me = (snapshot.players || []).find(p => p.pid === myPid);
     const { ox, oy } = cameraOffset();
     drawBackground(ox, oy);
     drawAreas(ox, oy);
+    drawCtf(ox, oy);
+    drawRipples(ox, oy);
     drawMeleeFx(ox, oy);
     drawProjectiles(ox, oy);
     drawPlayers(ox, oy);
+    drawFloaters(ox, oy);
     drawMinimap();
-    drawScoreboard();
     drawMatchHud();
+    updatePlayerCard(me);
+    updateHotbar(me);
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);

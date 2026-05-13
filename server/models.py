@@ -17,7 +17,7 @@ student's JS produced in their own browser.
 
 from __future__ import annotations
 
-from typing import List, Literal, Optional, Union
+from typing import Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -302,6 +302,7 @@ class CharacterManifest(BaseModel):
     speed: float
     maxHealth: float
     powers: List[Power]
+    sprites: Optional[Dict[str, List[str]]] = None
 
     _vsz = field_validator("size")(_ranged("size", *SIZE_RANGE))
     _vsp = field_validator("speed")(_ranged("speed", *SPEED_RANGE))
@@ -323,6 +324,13 @@ class CharacterManifest(BaseModel):
         if len(set(keys)) != len(keys):
             raise ValueError("each power must use a different key")
         return v
+
+    @field_validator("sprites")
+    @classmethod
+    def _vsprites(cls, v):
+        if v is None:
+            return None
+        return _validate_sprites(v)
 
 
 # ---------------------------------------------------------------------------
@@ -375,3 +383,56 @@ def _safe_color(v: str) -> str:
     raise ValueError(
         "color must be a basic name (e.g. 'red') or hex like '#ff8800'"
     )
+
+
+# Sprite payload limits — keep small so the network and editor stay snappy.
+SPRITE_SLOTS = {"idle", "walk", "attack", "hurt"}
+SPRITE_FRAMES_MAX = 4
+SPRITE_FRAME_BYTES_MAX = 16 * 1024  # 16 KB per frame
+SPRITE_TOTAL_BYTES_MAX = 64 * 1024  # 64 KB across all frames
+_SPRITE_DATA_PREFIXES = ("data:image/png;base64,", "data:image/gif;base64,")
+
+
+def _validate_sprites(v: Dict[str, List[str]]) -> Dict[str, List[str]]:
+    if not isinstance(v, dict):
+        raise ValueError("sprites must be an object mapping slot -> [frames]")
+    out: Dict[str, List[str]] = {}
+    total = 0
+    for slot, frames in v.items():
+        if slot not in SPRITE_SLOTS:
+            raise ValueError(
+                f"sprites slot '{slot}' is not allowed; use one of "
+                f"{sorted(SPRITE_SLOTS)}"
+            )
+        if not isinstance(frames, list) or not frames:
+            raise ValueError(f"sprites['{slot}'] must be a non-empty list of frames")
+        if len(frames) > SPRITE_FRAMES_MAX:
+            raise ValueError(
+                f"sprites['{slot}'] has too many frames "
+                f"(max {SPRITE_FRAMES_MAX})"
+            )
+        clean: List[str] = []
+        for i, frame in enumerate(frames):
+            if not isinstance(frame, str):
+                raise ValueError(
+                    f"sprites['{slot}'][{i}] must be a data: URI string"
+                )
+            if not frame.startswith(_SPRITE_DATA_PREFIXES):
+                raise ValueError(
+                    f"sprites['{slot}'][{i}] must start with "
+                    "'data:image/png;base64,' or 'data:image/gif;base64,'"
+                )
+            n = len(frame)
+            if n > SPRITE_FRAME_BYTES_MAX:
+                raise ValueError(
+                    f"sprites['{slot}'][{i}] is too large "
+                    f"({n} bytes; max {SPRITE_FRAME_BYTES_MAX})"
+                )
+            total += n
+            if total > SPRITE_TOTAL_BYTES_MAX:
+                raise ValueError(
+                    f"sprites total payload exceeds {SPRITE_TOTAL_BYTES_MAX} bytes"
+                )
+            clean.append(frame)
+        out[slot] = clean
+    return out

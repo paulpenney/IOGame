@@ -6,27 +6,35 @@
   <title>Arena · Classroom IO Game</title>
   <link rel="stylesheet" href="/static/styles.css" />
 </head>
-<body>
-  <main class="page arena-page">
-    <header class="arena-header">
-      <h1>Arena</h1>
-      <div id="status" class="status">disconnected</div>
-      <a class="back" href="/">&larr; Home</a>
-    </header>
+<body class="arena-body">
+  <div class="arena-topbar">
+    <a class="arena-brand" href="/"><span class="dot"></span> Arena</a>
+    <div id="status" class="status">disconnected</div>
+    <a class="back" href="/student">Editor</a>
+    <a class="back" href="/">Home</a>
+  </div>
 
-    <div class="arena-grid">
-      <canvas id="game" width="1200" height="800"></canvas>
-      <aside class="panel scoreboard">
-        <h2>Players</h2>
-        <ol id="scoreboard"></ol>
-        <h2>Controls</h2>
-        <ul class="tips">
-          <li><code>WASD</code> / arrow keys – move</li>
-          <li>Power key (e.g. <code>space</code>) – fire</li>
-        </ul>
-      </aside>
+  <div class="stage" id="stage">
+    <canvas id="game"></canvas>
+
+    <div id="killFeed" class="kill-feed"></div>
+
+    <div id="playerCard" class="player-card hidden">
+      <div class="pc-row">
+        <div class="pc-portrait" id="pcPortrait"></div>
+        <div class="pc-meta">
+          <div class="pc-name" id="pcName">—</div>
+          <div class="pc-char" id="pcChar"></div>
+        </div>
+      </div>
+      <div class="bar hp"><div class="bar-fill" id="hpFill"></div><span class="bar-label" id="hpLabel">100/100</span></div>
+      <div class="bar stamina"><div class="bar-fill" id="stamFill"></div><span class="bar-label">stamina</span></div>
+      <div class="pc-tip">Shift = sprint &nbsp;·&nbsp; C = dodge roll</div>
     </div>
-  </main>
+
+    <div id="hotbar" class="hotbar"></div>
+    <div id="banner" class="banner"></div>
+  </div>
 
   <script src="/static/game_client.js"></script>
 </body>

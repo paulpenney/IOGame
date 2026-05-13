@@ -33,6 +33,109 @@
   codeEl.addEventListener('input', persist);
   usernameEl.addEventListener('input', persist);
 
+  // ---- Sprite import widget ------------------------------------------------
+  const spriteSlot = document.getElementById('spriteSlot');
+  const spriteFile = document.getElementById('spriteFile');
+  const spriteOut = document.getElementById('spriteOut');
+  const spriteCopyBtn = document.getElementById('spriteCopyBtn');
+  const spriteInsertBtn = document.getElementById('spriteInsertBtn');
+  let lastSnippet = '';
+  if (spriteFile) {
+    spriteFile.addEventListener('change', async () => {
+      const files = Array.from(spriteFile.files || []).slice(0, 4);
+      if (!files.length) return;
+      try {
+        const dataURIs = [];
+        for (const f of files) {
+          if (!/^image\/(png|gif)$/.test(f.type)) {
+            throw new Error(`${f.name}: must be PNG or GIF`);
+          }
+          if (f.size > 16 * 1024) {
+            throw new Error(`${f.name} is ${(f.size/1024).toFixed(1)} KB; keep under 16 KB`);
+          }
+          dataURIs.push(await readAsDataURL(f));
+        }
+        const slot = spriteSlot.value;
+        const lines = dataURIs.map(u => `      "${u}"`).join(',\n');
+        lastSnippet =
+`// Add inside your buildCharacter return object:
+sprites: {
+  ${slot}: [
+${lines}
+  ]
+}`;
+        spriteOut.textContent = lastSnippet;
+        spriteCopyBtn.disabled = false;
+        if (spriteInsertBtn) spriteInsertBtn.disabled = false;
+      } catch (e) {
+        spriteOut.textContent = 'Error: ' + (e.message || e);
+        spriteCopyBtn.disabled = true;
+        if (spriteInsertBtn) spriteInsertBtn.disabled = true;
+      }
+    });
+    spriteCopyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(lastSnippet);
+        const orig = spriteCopyBtn.textContent;
+        spriteCopyBtn.textContent = '✓ Copied!';
+        setTimeout(() => { spriteCopyBtn.textContent = orig; }, 1200);
+      } catch (e) {
+        spriteOut.textContent += '\n\n(Could not access clipboard — select & copy manually.)';
+      }
+    });
+    if (spriteInsertBtn) {
+      spriteInsertBtn.addEventListener('click', () => {
+        if (!lastSnippet) return;
+        // Try to inject into the existing return { ... } in buildCharacter.
+        const code = codeEl.value;
+        const slotName = spriteSlot.value;
+        // Strip the leading "// Add inside..." comment line + "sprites:" keyword
+        // so we can splice the inner block directly into a return object.
+        const inner = lastSnippet.split('\n').slice(2, -1).join('\n'); // the "  slot: [ ... ]" lines
+        // Look for an existing `sprites: {` in the user code.
+        const hasSprites = /\bsprites\s*:\s*\{/.test(code);
+        let next;
+        if (hasSprites) {
+          // Insert (or replace) just this slot's array inside the existing sprites object.
+          const slotRe = new RegExp(`(\\b${slotName}\\s*:\\s*\\[)[\\s\\S]*?(\\])`, 'm');
+          if (slotRe.test(code)) {
+            // Replace existing array contents.
+            const arr = inner.replace(new RegExp(`^\\s*${slotName}\\s*:\\s*\\[`), '').replace(/\]\s*$/, '');
+            next = code.replace(slotRe, `$1${arr}$2`);
+          } else {
+            // Add new slot inside existing sprites: { ... }.
+            next = code.replace(/(sprites\s*:\s*\{)/, `$1\n${inner.replace(/^\s*/gm, '    ')},`);
+          }
+        } else {
+          // Insert a fresh sprites block before the final `};` of the return object.
+          // Prefer the LAST `};` in the file that closes `return { ... }`.
+          const idx = code.lastIndexOf('};');
+          if (idx === -1) {
+            spriteOut.textContent += '\n\n(Could not find a return object to insert into. Paste manually.)';
+            return;
+          }
+          // Insert before that `};` with proper indent + comma if needed.
+          const before = code.slice(0, idx).replace(/[\s,]+$/, '');
+          const needsComma = !before.endsWith(',');
+          const insertion = `${needsComma ? ',' : ''}\n  sprites: {\n${inner.replace(/^/gm, '  ')}\n  },\n`;
+          next = before + insertion + code.slice(idx);
+        }
+        codeEl.value = next;
+        persist();
+        spriteInsertBtn.textContent = '✓ Inserted!';
+        setTimeout(() => { spriteInsertBtn.textContent = '↳ Insert into editor'; }, 1400);
+      });
+    }
+  }
+  function readAsDataURL(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = () => reject(new Error('read failed'));
+      r.readAsDataURL(file);
+    });
+  }
+
   async function loadFile(url) {
     const r = await fetch(url);
     if (!r.ok) throw new Error('failed to load ' + url);
