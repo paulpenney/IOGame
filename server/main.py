@@ -19,6 +19,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .balance import build_report
+from .bot_runner import LiveBotSwarm, set_ai_logging, get_ai_logging_status
 from .game_state import GameState
 from .protocol import (
     C2S_FIRE,
@@ -50,6 +51,12 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 def create_app(game: GameState | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        # Print the teacher token exactly once at real server start.
+        if not app.state.teacher_token_from_env:
+            log.info("=" * 60)
+            log.info("TEACHER TOKEN: %s   (use as ?token=... or X-Teacher-Token)",
+                     app.state.teacher_token)
+            log.info("=" * 60)
         app.state.tick_task = asyncio.create_task(_tick_loop(app))
         try:
             yield
@@ -61,23 +68,27 @@ def create_app(game: GameState | None = None) -> FastAPI:
                     await t
                 except (asyncio.CancelledError, Exception):
                     pass
+            try:
+                await app.state.bot_swarm.stop()
+            except Exception:
+                pass
 
     app = FastAPI(title="Classroom IO Game", lifespan=lifespan)
     app.state.game = game or GameState()
     app.state.connections: Dict[str, WebSocket] = {}
     app.state.spectators: set[WebSocket] = set()
     app.state.tick_task = None
-    # Teacher token: read from env, else generate one and print it once.
-    token = os.environ.get("TEACHER_TOKEN")
-    if not token:
-        token = secrets.token_urlsafe(8)
-        log.info("=" * 60)
-        log.info("TEACHER TOKEN: %s   (use as ?token=... or X-Teacher-Token)", token)
-        log.info("=" * 60)
+    # Teacher token: read from env, else generate one. Print happens in
+    # lifespan startup so uvicorn --reload (which imports the module twice)
+    # only logs the token once.
+    token = os.environ.get("TEACHER_TOKEN") or secrets.token_urlsafe(8)
     app.state.teacher_token = token
+    app.state.teacher_token_from_env = bool(os.environ.get("TEACHER_TOKEN"))
     # Map pending_id -> websocket for safe-mode approvals.
     app.state.pending_sockets: Dict[str, WebSocket] = {}
     app.state.pending_meta: Dict[str, dict] = {}
+    # Optional 20-bot demo swarm (teacher dashboard button).
+    app.state.bot_swarm = LiveBotSwarm(app.state.game)
 
     # --- HTTP routes ----------------------------------------------------
 
@@ -163,8 +174,10 @@ def create_app(game: GameState | None = None) -> FastAPI:
         _check_token(x_teacher_token or payload.get("token"))
         duration = float(payload.get("durationSec", 120.0))
         mode = payload.get("mode")
+        lives = payload.get("lives")
         try:
-            app.state.game.start_round(duration, mode=mode)
+            app.state.game.start_round(duration, mode=mode,
+                                       lives=int(lives) if lives is not None else None)
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
         return {"ok": True, "match": app.state.game._match_public(time.monotonic())}
@@ -203,6 +216,42 @@ def create_app(game: GameState | None = None) -> FastAPI:
         _check_token(x_teacher_token or payload.get("token"))
         app.state.game.safe_mode = bool(payload.get("enabled", False))
         return {"ok": True, "safeMode": app.state.game.safe_mode}
+
+    @app.post("/api/teacher/spawn_bots")
+    async def teacher_spawn_bots(payload: dict, x_teacher_token: str | None = Header(default=None)):
+        _check_token(x_teacher_token or payload.get("token"))
+        swarm: LiveBotSwarm = app.state.bot_swarm
+        if swarm.running:
+            return {"ok": True, "running": True, "count": swarm.count, "alreadyRunning": True}
+        spawned = swarm.spawn()
+        swarm.start()
+        return {"ok": True, "running": True, "count": spawned}
+
+    @app.post("/api/teacher/stop_bots")
+    async def teacher_stop_bots(payload: dict, x_teacher_token: str | None = Header(default=None)):
+        _check_token(x_teacher_token or payload.get("token"))
+        swarm: LiveBotSwarm = app.state.bot_swarm
+        removed = await swarm.stop()
+        return {"ok": True, "running": False, "removed": removed}
+
+    @app.get("/api/teacher/bots_status")
+    async def teacher_bots_status(token: str | None = None,
+                                  x_teacher_token: str | None = Header(default=None)):
+        _check_token(x_teacher_token or token)
+        swarm: LiveBotSwarm = app.state.bot_swarm
+        return {"ok": True, "running": swarm.running, "count": swarm.count}
+
+    @app.post("/api/teacher/ai_logging")
+    async def teacher_ai_logging(payload: dict, x_teacher_token: str | None = Header(default=None)):
+        _check_token(x_teacher_token or payload.get("token"))
+        info = set_ai_logging(bool(payload.get("enabled", False)))
+        return {"ok": True, **info}
+
+    @app.get("/api/teacher/ai_logging")
+    async def teacher_ai_logging_status(token: str | None = None,
+                                        x_teacher_token: str | None = Header(default=None)):
+        _check_token(x_teacher_token or token)
+        return {"ok": True, **get_ai_logging_status()}
 
     @app.get("/api/teacher/pending")
     async def teacher_pending(token: str | None = None,

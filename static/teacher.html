@@ -31,14 +31,24 @@
         </select>
       </label>
       <div>
-        <button class="tbtn" onclick="api('start_round', {durationSec: +dur.value, mode: document.getElementById('mode').value})">Start round</button>
+        <button class="tbtn" onclick="api('start_round', {durationSec: +dur.value, mode: document.getElementById('mode').value, lives: +document.getElementById('lives').value})">Start round</button>
         <button class="tbtn" onclick="api('end_round')">End round</button>
         <button class="tbtn" onclick="api('reset')">Reset arena</button>
         <button class="tbtn" onclick="api('clear_projectiles')">Clear projectiles</button>
+        <label style="margin-left:12px;">Lives <input id="lives" type="number" min="1" max="20" value="3" style="width:50px"></label>
         <label style="display:inline-block; margin-left:12px;">
           <input id="safeMode" type="checkbox" onchange="api('safe_mode', {enabled: this.checked})" />
           Safe mode (approve every join)
         </label>
+      </div>
+      <div style="margin-top:10px;">
+        <button id="botsBtn" class="tbtn" type="button" onclick="toggleBots()">Spawn 20 demo bots</button>
+        <span id="botsStatus" style="color:var(--muted); font-size:13px; margin-left:8px;"></span>
+        <span style="color:var(--muted); font-size:12px; margin-left:8px;">
+          (open <a href="/spectator" target="_blank">/spectator</a> to watch)
+        </span>
+        <button id="aiLogBtn" class="tbtn" type="button" onclick="toggleAiLog()" style="margin-left:14px;">AI log: OFF</button>
+        <span id="aiLogPath" style="color:var(--muted); font-size:12px; margin-left:8px;"></span>
       </div>
     </section>
 
@@ -94,6 +104,59 @@
     async function kick(pid) {
       if (!confirm('Kick this player?')) return;
       await api('kick', {pid});
+    }
+
+    let botsRunning = false;
+    async function toggleBots() {
+      const path = botsRunning ? 'stop_bots' : 'spawn_bots';
+      await api(path);
+      // refresh() will pick up the new status
+    }
+    async function refreshBotsStatus() {
+      try {
+        const r = await fetch('/api/teacher/bots_status?token=' + encodeURIComponent(getToken()));
+        if (!r.ok) return;
+        const j = await r.json();
+        botsRunning = !!j.running;
+        const btn = document.getElementById('botsBtn');
+        const stat = document.getElementById('botsStatus');
+        if (botsRunning) {
+          btn.textContent = 'Stop demo bots';
+          btn.classList.add('danger');
+          stat.textContent = `${j.count} bots fighting`;
+        } else {
+          btn.textContent = 'Spawn 20 demo bots';
+          btn.classList.remove('danger');
+          stat.textContent = '';
+        }
+      } catch (_) { /* ignore */ }
+    }
+
+    let aiLogOn = false;
+    async function toggleAiLog() {
+      const r = await fetch('/api/teacher/ai_logging', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-Teacher-Token': getToken()},
+        body: JSON.stringify({enabled: !aiLogOn})
+      });
+      if (!r.ok) return;
+      const j = await r.json();
+      applyAiLogStatus(j);
+    }
+    function applyAiLogStatus(j) {
+      aiLogOn = !!j.enabled;
+      const btn = document.getElementById('aiLogBtn');
+      const lbl = document.getElementById('aiLogPath');
+      btn.textContent = `AI log: ${aiLogOn ? 'ON' : 'OFF'}`;
+      btn.classList.toggle('danger', aiLogOn);
+      lbl.textContent = aiLogOn ? `→ ${j.path}` : '';
+    }
+    async function refreshAiLog() {
+      try {
+        const r = await fetch('/api/teacher/ai_logging?token=' + encodeURIComponent(getToken()));
+        if (!r.ok) return;
+        applyAiLogStatus(await r.json());
+      } catch (_) {}
     }
 
     async function refresh() {
@@ -165,6 +228,9 @@
     }
     refresh();
     setInterval(refresh, 1500);
+    refreshBotsStatus();
+    setInterval(refreshBotsStatus, 1500);
+    refreshAiLog();
   </script>
 </body>
 </html>

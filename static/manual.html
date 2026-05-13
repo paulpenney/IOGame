@@ -30,13 +30,19 @@
 <body>
   <main class="page manual">
     <h1>Power Manual</h1>
-    <p>Every power has the same outer shape:</p>
+    <p>Your character lives in <code>character.py</code>. You write a function
+       <code>build_character()</code> that returns a dictionary. Inside
+       <code>powers</code> is a list of power dicts, and every power has the
+       same outer shape:</p>
     <pre>{
-  name: "My Power",
-  key: "space",          // press this key to use it
-  cooldownMs: 800,       // 150 .. 15000
-  cast: { kind: "...", ...stuff that depends on the kind }
+  "name": "My Power",
+  "key": "space",          # press this key to use it
+  "cooldownMs": 800,       # 150 .. 15000
+  "cast": { "kind": "...", ...stuff that depends on the kind }
 }</pre>
+    <p>Python tip: use <code>True</code> / <code>False</code> (capital first
+       letter) and <code>None</code> instead of JS <code>true</code> /
+       <code>false</code> / <code>null</code>.</p>
 
     <h2>The 6 cast kinds</h2>
     <p>The <code>cast.kind</code> picks <em>how</em> the power is delivered.</p>
@@ -143,64 +149,102 @@
 
     <h3>A piercing magic arrow</h3>
     <pre>{
-  name: "Magic Arrow", key: "space", cooldownMs: 700,
-  cast: {
-    kind: "projectile", color: "purple",
-    speed: 600, radius: 5, lifetimeMs: 1500,
-    count: 1, pierce: true,
-    onHit: [{ effect: "damage", amount: 18 }]
-  }
+  "name": "Magic Arrow", "key": "space", "cooldownMs": 700,
+  "cast": {
+    "kind": "projectile", "color": "purple",
+    "speed": 600, "radius": 5, "lifetimeMs": 1500,
+    "count": 1, "pierce": True,
+    "onHit": [{"effect": "damage", "amount": 18}],
+  },
 }</pre>
 
     <h3>A shotgun fan</h3>
     <pre>{
-  name: "Scattershot", key: "space", cooldownMs: 1200,
-  cast: {
-    kind: "projectile", color: "yellow",
-    speed: 500, radius: 5, lifetimeMs: 800,
-    count: 5, spreadDeg: 40,
-    onHit: [{ effect: "damage", amount: 8 }]
-  }
+  "name": "Scattershot", "key": "space", "cooldownMs": 1200,
+  "cast": {
+    "kind": "projectile", "color": "yellow",
+    "speed": 500, "radius": 5, "lifetimeMs": 800,
+    "count": 5, "spreadDeg": 40,
+    "onHit": [{"effect": "damage", "amount": 8}],
+  },
 }</pre>
 
     <h3>A poison cloud (area)</h3>
     <pre>{
-  name: "Poison Cloud", key: "q", cooldownMs: 4000,
-  cast: {
-    kind: "area", color: "green",
-    radius: 90, durationMs: 3000, tickIntervalMs: 250,
-    onTick: [
-      { effect: "dot", dps: 10, durationMs: 1000 },
-      { effect: "slow", factor: 0.6, durationMs: 800 }
-    ]
-  }
+  "name": "Poison Cloud", "key": "q", "cooldownMs": 4000,
+  "cast": {
+    "kind": "area", "color": "green",
+    "radius": 90, "durationMs": 3000, "tickIntervalMs": 250,
+    "onTick": [
+      {"effect": "dot", "dps": 10, "durationMs": 1000},
+      {"effect": "slow", "factor": 0.6, "durationMs": 800},
+    ],
+  },
 }</pre>
 
     <h3>A defensive shield</h3>
     <pre>{
-  name: "Bulwark", key: "e", cooldownMs: 6000,
-  cast: { kind: "shield", color: "cyan", amount: 60, durationMs: 4000 }
+  "name": "Bulwark", "key": "e", "cooldownMs": 6000,
+  "cast": {"kind": "shield", "color": "cyan", "amount": 60, "durationMs": 4000},
 }</pre>
 
     <h3>An invulnerable dash</h3>
     <pre>{
-  name: "Blink", key: "f", cooldownMs: 3000,
-  cast: { kind: "dash", color: "white", distance: 220, durationMs: 200, invulnerable: true }
+  "name": "Blink", "key": "f", "cooldownMs": 3000,
+  "cast": {"kind": "dash", "color": "white", "distance": 220,
+           "durationMs": 200, "invulnerable": True},
 }</pre>
 
     <h3>A melee swing with knockback + stun</h3>
     <pre>{
-  name: "Hammer", key: "space", cooldownMs: 900,
-  cast: {
-    kind: "melee", color: "orange",
-    range: 80, arcDeg: 90,
-    onHit: [
-      { effect: "damage", amount: 22 },
-      { effect: "knockback", strength: 240 },
-      { effect: "stun", durationMs: 300 }
-    ]
-  }
+  "name": "Hammer", "key": "space", "cooldownMs": 900,
+  "cast": {
+    "kind": "melee", "color": "orange",
+    "range": 80, "arcDeg": 90,
+    "onHit": [
+      {"effect": "damage", "amount": 22},
+      {"effect": "knockback", "strength": 240},
+      {"effect": "stun", "durationMs": 300},
+    ],
+  },
 }</pre>
+
+    <h3>A complete <code>build_character()</code></h3>
+    <p>Drop powers into <code>powers</code> and return the whole character:</p>
+    <pre>def build_character():
+    fireball = {
+        "name": "Fireball", "key": "space", "cooldownMs": 600,
+        "cast": {
+            "kind": "projectile", "color": "orange",
+            "speed": 540, "radius": 6, "lifetimeMs": 1400,
+            "count": 1,
+            "onHit": [
+                {"effect": "damage", "amount": 16},
+                {"effect": "dot", "dps": 8, "durationMs": 1500},
+            ],
+        },
+    }
+
+    blink = {
+        "name": "Blink", "key": "f", "cooldownMs": 3500,
+        "cast": {
+            "kind": "dash", "color": "white",
+            "distance": 220, "durationMs": 200, "invulnerable": True,
+        },
+    }
+
+    return {
+        "characterName": "My Mage",
+        "color": "#ff6a3d",
+        "size": 22,
+        "speed": 230,
+        "maxHealth": 90,
+        "powers": [fireball, blink],
+    }</pre>
+    <p>The first power’s <code>key</code> is the one that fires when you click;
+       the rest fire when you press their key. Use single-character keys
+       (<code>"space"</code>, <code>"q"</code>, <code>"e"</code>, <code>"f"</code>) so you can
+       reach them while moving with WASD.</p>
 
     <h2>Controls &amp; movement</h2>
     <ul>
@@ -208,6 +252,8 @@
           weight — quick taps now feel like dodges.</li>
       <li><strong>Mouse</strong> aims your character. You can run one way
           while shooting another, just like a real twin-stick game.</li>
+      <li><strong>Shift</strong> to sprint, <strong>C</strong> to dodge-roll
+          (brief invulnerability), <strong>M</strong> to mute sound.</li>
       <li>Each power has its own key (set in your manifest). Press it once to
           fire — the cooldown is shown above your hotbar.</li>
     </ul>
@@ -251,8 +297,8 @@
         <tr><td>Assassin</td><td>burst melee + dash</td><td>fragile, short range</td><td>Rogue</td></tr>
         <tr><td>Mage</td><td>area control, DoT, multi-shot</td><td>long cooldowns</td><td>Fire Wizard</td></tr>
         <tr><td>Healer</td><td>heal cast, regen area</td><td>weak attacks</td><td>Medic</td></tr>
-        <tr><td>Ranger</td><td>fast projectiles, kiting</td><td>medium HP</td><td>build your own!</td></tr>
-        <tr><td>Controller</td><td>stuns, slows, knockback</td><td>low DPS</td><td>build your own!</td></tr>
+        <tr><td>Bruiser</td><td>melee + knockback + shield</td><td>medium range</td><td>Paladin</td></tr>
+        <tr><td>Controller</td><td>area + knockback + slow</td><td>low DPS</td><td>Bomber</td></tr>
       </tbody>
     </table>
 

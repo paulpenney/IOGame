@@ -4,7 +4,7 @@ from __future__ import annotations
 import math
 import pytest
 
-from server.game_state import GameState, CTF_CAPTURES_TO_WIN
+from server.game_state import GameState, CTF_CAPTURES_TO_WIN, CTF_HOLD_SECONDS
 from server.models import CharacterManifest
 
 
@@ -74,22 +74,50 @@ def test_ctf_pickup_and_capture_increments_score_and_can_win():
     p.team = 1
     enemy_flag = g.flags[2]
     p.x, p.y = enemy_flag["x"], enemy_flag["y"]
+    g._last_dt = 1.0 / 30.0
     g._step_ctf(now=0.0)
     assert p.has_flag_team == 2
     assert g.flags[2]["carrier"] == p.pid
 
-    # Walk back to own base and tick. Capture target = 3.
-    own = g.flags[1]
+    # Walk back to own capture zone and tick long enough to score.
+    own_zone = g.capture_zones[1]
+    p.x, p.y = own_zone["x"], own_zone["y"]
+    # Need CTF_HOLD_SECONDS * tick_hz ticks per capture.
+    ticks_per_cap = int(CTF_HOLD_SECONDS * 30) + 2
     for _ in range(CTF_CAPTURES_TO_WIN):
-        # Refresh: make sure player is alive and grab the flag if needed.
         if not p.has_flag_team:
             p.x, p.y = enemy_flag["home_x"], enemy_flag["home_y"]
             g._step_ctf(now=0.0)
-        p.x, p.y = own["home_x"], own["home_y"]
-        g._step_ctf(now=0.0)
+            p.x, p.y = own_zone["x"], own_zone["y"]
+        for _ in range(ticks_per_cap):
+            g._step_ctf(now=0.0)
+            if not p.has_flag_team:
+                break
     assert g.team_caps[1] == CTF_CAPTURES_TO_WIN
     # Round should auto-end after reaching the cap.
     assert g.match_status == "ended"
+
+
+def test_ctf_progress_resets_on_leaving_zone():
+    g = GameState()
+    p = g.add_player("alice", make_manifest("A"))
+    g.start_round(60, mode="ctf")
+    p.team = 1
+    g._last_dt = 1.0 / 30.0
+    p.x, p.y = g.flags[2]["x"], g.flags[2]["y"]
+    g._step_ctf(now=0.0)
+    assert p.has_flag_team == 2
+    own_zone = g.capture_zones[1]
+    # Stand in zone for half the required time.
+    p.x, p.y = own_zone["x"], own_zone["y"]
+    for _ in range(int(CTF_HOLD_SECONDS * 30 / 2)):
+        g._step_ctf(now=0.0)
+    assert g._capture_progress[p.pid] > 0.0
+    # Walk far away — progress resets.
+    p.x, p.y = own_zone["x"] + 10_000, own_zone["y"]
+    g._step_ctf(now=0.0)
+    assert g._capture_progress[p.pid] == 0.0
+    assert g.team_caps[1] == 0
 
 
 def test_ctf_carrier_drops_flag_on_death():

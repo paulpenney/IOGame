@@ -119,7 +119,7 @@
       li.innerHTML = `
         <span class="rank">${i + 1}</span>
         <span class="swatch"></span>
-        <span class="name">${escapeHtml(p.username || '???')}${!p.alive ? ' <em>·dead</em>' : ''}</span>
+        <span class="name">${escapeHtml(p.username || '???')}${p.eliminated ? ' <em>·OUT</em>' : (!p.alive ? ' <em>·dead</em>' : '')}</span>
         <span class="kd">${p.kills}/${p.deaths}</span>`;
       li.addEventListener('click', () => {
         pinnedPid = (pinnedPid === p.pid) ? null : p.pid;
@@ -151,6 +151,14 @@
   }
 
   // ---- Rendering ----
+  // Optional shared background image — same file as the player view uses.
+  const bgImage = (() => {
+    const img = new Image();
+    img.src = '/static/background.png';
+    img.onerror = () => { img._failed = true; };
+    return img;
+  })();
+
   function drawBackground(camera, w, h) {
     ctx.fillStyle = '#03040a';
     ctx.fillRect(0, 0, w, h);
@@ -158,6 +166,19 @@
     const { ox, oy, scale } = camera;
     ctx.fillStyle = 'rgba(20, 24, 50, 0.85)';
     ctx.fillRect(ox, oy, world.width * scale, world.height * scale);
+    // Background image (washed-out for spectator clarity).
+    if (bgImage && !bgImage._failed && bgImage.complete && bgImage.naturalWidth > 0) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(ox, oy, world.width * scale, world.height * scale);
+      ctx.clip();
+      ctx.globalAlpha = 0.72;
+      ctx.drawImage(bgImage, ox, oy, world.width * scale, world.height * scale);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = 'rgba(8, 10, 24, 0.42)';
+      ctx.fillRect(ox, oy, world.width * scale, world.height * scale);
+      ctx.restore();
+    }
     // Soft grid
     ctx.strokeStyle = 'rgba(255,255,255,0.05)';
     ctx.lineWidth = 1;
@@ -197,6 +218,51 @@
     }
     ctx.globalAlpha = 1;
 
+    // CTF: capture zones + flags
+    if (snapshot.mode === 'ctf') {
+      const tnow = performance.now() / 1000;
+      for (const z of (snapshot.captureZones || [])) {
+        const color = z.team === 1 ? '#5dd6ff' : '#ff7a7a';
+        const cx = ox + z.x * scale, cy = oy + z.y * scale;
+        const r = (z.radius || 90) * scale;
+        const active = z.carrierPid && z.progress > 0;
+        const pulse = active ? 0.55 + 0.35 * Math.sin(tnow * 6) : 0.35;
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.globalAlpha = pulse;
+        ctx.lineWidth = active ? 4 : 3;
+        ctx.setLineDash(active ? [] : [6, 6]);
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+        ctx.setLineDash([]);
+        if (active) {
+          ctx.globalAlpha = 0.18;
+          ctx.fillStyle = color;
+          ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+          const frac = Math.min(1, (z.progress || 0) / (z.holdSeconds || 10));
+          ctx.globalAlpha = 0.95;
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 5;
+          ctx.beginPath();
+          ctx.arc(cx, cy, r + 8, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+      for (const f of (snapshot.flags || [])) {
+        const color = f.team === 1 ? '#5dd6ff' : '#ff7a7a';
+        const fx = ox + f.x * scale, fy = oy + f.y * scale;
+        ctx.strokeStyle = '#e7e9f3';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(fx, fy - 22); ctx.lineTo(fx, fy + 6); ctx.stroke();
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(fx, fy - 22);
+        ctx.lineTo(fx + 16, fy - 16);
+        ctx.lineTo(fx, fy - 10);
+        ctx.closePath(); ctx.fill();
+      }
+    }
+
     // Melee fx
     for (const m of snapshot.meleeFx || []) {
       const a = Math.atan2(m.facingY, m.facingX);
@@ -227,13 +293,14 @@
       ctx.fill();
     }
 
-    // Players
+    // Players (skip dead and eliminated — they shouldn't render anywhere)
     const now = performance.now();
     for (const p of snapshot.players || []) {
+      if (!p.alive || p.eliminated) continue;
       const r = (p.size / 2) * scale * 1.8;
       const px = ox + p.x * scale;
       const py = oy + p.y * scale;
-      ctx.globalAlpha = p.alive ? 1 : 0.25;
+      ctx.globalAlpha = 1;
 
       // Highlight ring for the focused player
       if (opts.highlightPid && p.pid === opts.highlightPid) {
@@ -344,10 +411,10 @@
   function focusedPlayer() {
     if (pinnedPid) {
       const p = (snapshot.players || []).find(x => x.pid === pinnedPid);
-      if (p) return p;
+      if (p && p.alive && !p.eliminated) return p;
       pinnedPid = null;
     }
-    const lb = leaderboard();
+    const lb = leaderboard().filter(p => p.alive && !p.eliminated);
     return lb[0] || null;
   }
   function frame() {
@@ -355,7 +422,7 @@
     ctx.clearRect(0, 0, w, h);
     const effectiveMode = pinnedPid ? 'follow' : mode;
     if (effectiveMode === 'quad') {
-      const lb = leaderboard().slice(0, 4);
+      const lb = leaderboard().filter(p => p.alive && !p.eliminated).slice(0, 4);
       const cells = [
         { x: 0, y: 0 }, { x: w / 2, y: 0 },
         { x: 0, y: h / 2 }, { x: w / 2, y: h / 2 },
@@ -371,13 +438,33 @@
         if (target) {
           cam = followCamera(cw, ch, target, 1.0);
           drawScene(cam, cw, ch, { highlightPid: target.pid });
-          // Player label per cell
-          ctx.fillStyle = 'rgba(0,0,0,0.55)';
-          ctx.fillRect(8, 8, 220, 26);
+          // Player label per cell — with team badge in team / ctf modes.
+          const teamColor = target.team === 1 ? '#5dd6ff'
+                          : target.team === 2 ? '#ff7a7a' : null;
+          const teamLabel = target.team === 1 ? 'BLUE'
+                          : target.team === 2 ? 'RED' : null;
+          ctx.fillStyle = 'rgba(0,0,0,0.6)';
+          ctx.fillRect(8, 8, teamLabel ? 260 : 220, 26);
+          // Team badge swatch
+          if (teamColor) {
+            ctx.fillStyle = teamColor;
+            ctx.fillRect(14, 14, 14, 14);
+            ctx.fillStyle = '#000';
+            ctx.font = '700 10px -apple-system,sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(teamLabel === 'BLUE' ? 'B' : 'R', 21, 25);
+          }
           ctx.fillStyle = '#fff';
           ctx.font = '600 13px -apple-system,sans-serif';
           ctx.textAlign = 'left';
-          ctx.fillText(`${i + 1}. ${target.username}  ${target.kills}/${target.deaths}`, 16, 26);
+          const labelX = teamColor ? 36 : 16;
+          ctx.fillText(`${i + 1}. ${target.username}  ${target.kills}/${target.deaths}`, labelX, 26);
+          // Flag-carrier mark.
+          if (target.hasFlag) {
+            ctx.fillStyle = target.hasFlag === 1 ? '#5dd6ff' : '#ff7a7a';
+            ctx.font = '700 13px -apple-system,sans-serif';
+            ctx.fillText('⚑', (teamColor ? 260 : 220) - 6, 26);
+          }
         } else {
           cam = fitCamera(cw, ch);
           drawScene(cam, cw, ch, {});

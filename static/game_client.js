@@ -208,8 +208,7 @@
 
   const wsUrl = (location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + location.host + '/ws';
   let ws;
-  let myPid = null;
-  let world = { width: 2400, height: 1600 };
+  let myPid = null;  let world = { width: 2400, height: 1600 };
   let snapshot = { players: [], projectiles: [], areas: [], meleeFx: [] };
 
   function connect() {
@@ -279,6 +278,12 @@
     return (me.powers || []).map(p => p.key);
   }
 
+  function iAmEliminated() {
+    if (!myPid || !snapshot.players) return false;
+    const me = snapshot.players.find(p => p.pid === myPid);
+    return !!(me && me.eliminated);
+  }
+
   window.addEventListener('keydown', (ev) => {
     const k = normalizeKey(ev);
     const isMove = !!MOVE_KEYS[k];
@@ -288,6 +293,7 @@
     if (isMove || isPower || isSprint || isRoll) ev.preventDefault();
     if (keys[k]) return;
     keys[k] = true;
+    if (iAmEliminated()) return;  // spectator: ignore game inputs
     if (isPower && ws && ws.readyState === 1) {
       ws.send(JSON.stringify({ type: 'fire', payload: { key: k } }));
       flashHotbarSlot(k);
@@ -307,6 +313,11 @@
 
   setInterval(() => {
     if (!ws || ws.readyState !== 1 || !myPid) return;
+    if (iAmEliminated()) {
+      // Spectator: send zero input so the server stops moving us.
+      try { ws.send(JSON.stringify({ type: 'input', payload: { mx: 0, my: 0 } })); } catch (_) {}
+      return;
+    }
     let mx = 0, my = 0;
     for (const k in keys) {
       if (!keys[k]) continue;
@@ -385,6 +396,16 @@
     return out;
   })();
 
+  // Optional background image: drop a file at static/background.png and it
+  // will be drawn stretched to the arena, with a dark wash overlay so the
+  // characters always read clearly on top.
+  const bgImage = (() => {
+    const img = new Image();
+    img.src = '/static/background.png';
+    img.onerror = () => { img._failed = true; };
+    return img;
+  })();
+
   // Slow-drifting coloured nebula blobs across the arena floor.
   const nebulae = [
     { x: 0.20, y: 0.30, r: 380, c: 'rgba(93, 214, 255, 0.10)', sp: 0.07 },
@@ -441,6 +462,18 @@
     // Arena floor base.
     ctx.fillStyle = 'rgba(14, 18, 38, 0.92)';
     ctx.fillRect(ox, oy, world.width, world.height);
+    // Optional user-supplied background image (washed-out for contrast).
+    if (bgImage && !bgImage._failed && bgImage.complete && bgImage.naturalWidth > 0) {
+      ctx.save();
+      ctx.beginPath(); ctx.rect(ox, oy, world.width, world.height); ctx.clip();
+      ctx.globalAlpha = 0.72;
+      ctx.drawImage(bgImage, ox, oy, world.width, world.height);
+      ctx.globalAlpha = 1;
+      // Dark wash to push the image back so characters pop.
+      ctx.fillStyle = 'rgba(8, 10, 24, 0.42)';
+      ctx.fillRect(ox, oy, world.width, world.height);
+      ctx.restore();
+    }
     // Drifting coloured nebula blobs (clipped to arena).
     ctx.save();
     ctx.beginPath();
@@ -539,9 +572,11 @@
     const now = performance.now();
     const RENDER_SCALE = 1.8; // visual-only; hitboxes stay server-authoritative
     for (const p of snapshot.players || []) {
+      // Hide dead and eliminated players entirely.
+      if (!p.alive || p.eliminated) continue;
       const r = (p.size / 2) * RENDER_SCALE;
       const px = ox + p.x, py = oy + p.y;
-      ctx.globalAlpha = p.alive ? 1 : 0.25;
+      ctx.globalAlpha = 1;
 
       // Shadow disc on the floor.
       ctx.fillStyle = 'rgba(0,0,0,0.35)';
@@ -847,6 +882,13 @@
       const killer = playersById[e.by];
       addKillRow(killer, victim);
       SFX.death();
+      if (e.pid === myPid) {
+        if (e.eliminated) {
+          showBanner('You\'re out — spectating until next round', 4000);
+        } else if (typeof e.livesRemaining === 'number') {
+          showBanner(`You died — ${e.livesRemaining} ${e.livesRemaining === 1 ? 'life' : 'lives'} left`, 1600);
+        }
+      }
     } else if (e.kind === 'flag_pickup') {
       const carrier = playersById[e.pid];
       if (carrier) showBanner(`${carrier.username} grabbed the ${e.team === 1 ? 'Blue' : 'Red'} flag!`, 1500);
@@ -1020,17 +1062,41 @@
 
   function drawCtf(ox, oy) {
     if (snapshot.mode !== 'ctf') return;
+    const zones = snapshot.captureZones || [];
+    const t = performance.now() / 1000;
+    for (const z of zones) {
+      const color = z.team === 1 ? '#5dd6ff' : '#ff7a7a';
+      const cx = ox + z.x, cy = oy + z.y;
+      const r = z.radius || 90;
+      const active = z.carrierPid && z.progress > 0;
+      // Pulse intensity when an enemy carrier is scoring inside.
+      const pulse = active ? 0.55 + 0.35 * Math.sin(t * 6) : 0.35;
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = pulse;
+      ctx.lineWidth = active ? 4 : 3;
+      ctx.setLineDash(active ? [] : [6, 6]);
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
+      // Filled tint when active.
+      if (active) {
+        ctx.globalAlpha = 0.15;
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+        // Progress arc (clockwise from top).
+        const frac = Math.min(1, (z.progress || 0) / (z.holdSeconds || 10));
+        ctx.globalAlpha = 0.95;
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r + 8, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
     const flags = snapshot.flags || [];
     for (const f of flags) {
       const color = f.team === 1 ? '#5dd6ff' : '#ff7a7a';
-      // Base zone at home position.
-      ctx.strokeStyle = color;
-      ctx.globalAlpha = 0.45;
-      ctx.lineWidth = 3;
-      ctx.setLineDash([6, 6]);
-      ctx.beginPath(); ctx.arc(ox + f.homeX, oy + f.homeY, 80, 0, Math.PI * 2); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.globalAlpha = 1;
       // Flag itself (a triangle on a pole).
       const fx = ox + f.x, fy = oy + f.y;
       ctx.strokeStyle = '#e7e9f3';

@@ -54,7 +54,9 @@ ROLL_COOLDOWN_S = 0.55
 
 # CTF tuning.
 CTF_FLAG_RADIUS = 18
-CTF_BASE_RADIUS = 80
+CTF_BASE_RADIUS = 80          # legacy (flag home visual)
+CTF_CAPTURE_RADIUS = 90       # capture-zone circle radius
+CTF_HOLD_SECONDS = 10.0       # carrier must stand inside own capture zone
 CTF_CAPTURES_TO_WIN = 3
 
 
@@ -83,6 +85,10 @@ class Player:
     cooldowns: Dict[str, float] = field(default_factory=dict)  # power name -> ready time
     kills: int = 0
     deaths: int = 0
+    # Lives system: decremented on each death; when it reaches 0 the player
+    # becomes a spectator until the next round.
+    lives_remaining: int = 3
+    eliminated: bool = False
 
     # Status effects (epoch in monotonic seconds)
     slow_factor: float = 1.0
@@ -114,6 +120,8 @@ class Player:
             "alive": self.alive,
             "kills": self.kills,
             "deaths": self.deaths,
+            "livesRemaining": self.lives_remaining,
+            "eliminated": self.eliminated,
             "powers": [p.model_dump() for p in self.manifest.powers],
             "sprites": self.manifest.sprites or None,
             "status": {
@@ -238,7 +246,15 @@ class GameState:
         self.team_caps: Dict[int, int] = {1: 0, 2: 0}
         # CTF flag state. Each entry: {'home_x','home_y','x','y','carrier'}.
         self.flags: Dict[int, dict] = {}
+        # CTF capture zones — where a carrier must stand to score.
+        # team -> {'x','y','radius'}
+        self.capture_zones: Dict[int, dict] = {}
+        # Per-carrier capture progress (seconds accumulated inside own zone).
+        # pid -> seconds in [0, CTF_HOLD_SECONDS)
+        self._capture_progress: Dict[str, float] = {}
         self._next_team: int = 1  # round-robin assignment for late joiners
+        # Lives per player per round. Teacher can override in start_round.
+        self.lives_per_round: int = 3
 
     # --- player lifecycle -------------------------------------------------
 
@@ -258,6 +274,7 @@ class GameState:
             y=spawn[1],
             team=team,
             health=manifest.maxHealth,
+            lives_remaining=self.lives_per_round,
         )
         self.players[pid] = p
         self.events.append({"kind": "join", "pid": pid, "username": username})
@@ -345,7 +362,7 @@ class GameState:
         if now is None:
             now = time.monotonic()
         p = self.players.get(pid)
-        if p is None or not p.alive:
+        if p is None or not p.alive or p.eliminated:
             return False
         if now < p.stun_until:
             return False
@@ -525,7 +542,13 @@ class GameState:
             target.health = 0
             target.alive = False
             target.deaths += 1
-            target.respawn_at = now + RESPAWN_DELAY_S
+            target.lives_remaining = max(0, target.lives_remaining - 1)
+            if target.lives_remaining <= 0:
+                target.eliminated = True
+                # Spectators don't respawn until next round.
+                target.respawn_at = float("inf")
+            else:
+                target.respawn_at = now + RESPAWN_DELAY_S
             # Clear status when dying.
             target.dots.clear()
             target.shield_amount = 0
@@ -537,6 +560,8 @@ class GameState:
                 target.has_flag_team = 0
             self.events.append({
                 "kind": "death", "pid": target.pid, "by": source.pid,
+                "livesRemaining": target.lives_remaining,
+                "eliminated": target.eliminated,
             })
 
     # --- simulation -------------------------------------------------------
@@ -545,6 +570,7 @@ class GameState:
         if now is None:
             now = time.monotonic()
         self.tick += 1
+        self._last_dt = dt
         self._step_dots(dt, now)
         self._step_players(dt, now)
         self._step_projectiles(dt, now)
@@ -555,9 +581,14 @@ class GameState:
     def _effective_speed(self, p: Player, now: float) -> float:
         if now < p.stun_until:
             return 0.0
+        base = p.manifest.speed * SPEED_MULT_GLOBAL
         if now < p.slow_until:
-            return p.manifest.speed * p.slow_factor * SPEED_MULT_GLOBAL
-        return p.manifest.speed * SPEED_MULT_GLOBAL
+            base = p.manifest.speed * p.slow_factor * SPEED_MULT_GLOBAL
+        # CTF: flag carriers get a small speed bonus so making it home is
+        # actually achievable through enemy fire.
+        if self.mode == "ctf" and p.has_flag_team:
+            base *= 1.20
+        return base
 
     def _step_players(self, dt: float, now: float) -> None:
         # Frame-rate-independent lerp coefficients. We use a faster ramp when
@@ -693,6 +724,8 @@ class GameState:
 
     def _step_respawns(self, now: float) -> None:
         for p in self.players.values():
+            if p.eliminated:
+                continue
             if not p.alive and now >= p.respawn_at:
                 p.alive = True
                 p.health = p.manifest.maxHealth
@@ -726,6 +759,7 @@ class GameState:
             "match": self._match_public(now),
             "mode": self.mode,
             "flags": self._flags_public() if self.mode == "ctf" else [],
+            "captureZones": self._capture_zones_public() if self.mode == "ctf" else [],
             "teamScores": self.team_caps if self.mode in ("team", "ctf") else {},
         }
 
@@ -751,6 +785,7 @@ class GameState:
 
     def start_round(self, duration_s: float = DEFAULT_ROUND_S,
                     mode: Optional[str] = None,
+                    lives: Optional[int] = None,
                     now: Optional[float] = None) -> None:
         if now is None:
             now = time.monotonic()
@@ -759,6 +794,8 @@ class GameState:
             if mode not in ("ffa", "team", "ctf"):
                 raise ValueError(f"unknown mode: {mode}")
             self.mode = mode
+        if lives is not None:
+            self.lives_per_round = max(1, int(lives))
         self.match_id += 1
         self.match_status = "running"
         self.match_started_at = now
@@ -784,11 +821,23 @@ class GameState:
                 2: {"home_x": self.width * 0.92, "home_y": self.height / 2,
                     "x": self.width * 0.92, "y": self.height / 2, "carrier": None},
             }
+            # Capture zones: same point as own flag base. To score, carrier
+            # of enemy flag must stand inside their own team's zone for
+            # CTF_HOLD_SECONDS cumulative seconds.
+            self.capture_zones = {
+                1: {"x": self.width * 0.08, "y": self.height / 2, "radius": CTF_CAPTURE_RADIUS},
+                2: {"x": self.width * 0.92, "y": self.height / 2, "radius": CTF_CAPTURE_RADIUS},
+            }
+            self._capture_progress = {}
         else:
             self.flags = {}
+            self.capture_zones = {}
+            self._capture_progress = {}
         for p in self.players.values():
             p.kills = 0
             p.deaths = 0
+            p.lives_remaining = self.lives_per_round
+            p.eliminated = False
             p.health = p.manifest.maxHealth
             p.alive = True
             p.respawn_at = 0
@@ -824,8 +873,11 @@ class GameState:
         for p in self.players.values():
             p.kills = 0
             p.deaths = 0
+            p.lives_remaining = self.lives_per_round
+            p.eliminated = False
             p.health = p.manifest.maxHealth
             p.alive = True
+            p.respawn_at = 0
             p.cooldowns.clear()
             p.dots.clear()
             p.shield_amount = 0
@@ -881,10 +933,40 @@ class GameState:
             })
         return out
 
+    def _capture_zones_public(self) -> List[dict]:
+        out = []
+        for team, z in self.capture_zones.items():
+            # Find carrier of the *enemy* flag for this team — they're the one
+            # who can score by standing here. Report their progress.
+            holding_pid = None
+            progress = 0.0
+            other_team = 2 if team == 1 else 1
+            other_flag = self.flags.get(other_team)
+            if other_flag and other_flag.get("carrier"):
+                cid = other_flag["carrier"]
+                p = self.players.get(cid)
+                if p and p.alive and p.team == team:
+                    holding_pid = cid
+                    progress = self._capture_progress.get(cid, 0.0)
+            out.append({
+                "team": team,
+                "x": round(z["x"], 2),
+                "y": round(z["y"], 2),
+                "radius": z["radius"],
+                "holdSeconds": CTF_HOLD_SECONDS,
+                "carrierPid": holding_pid,
+                "progress": round(progress, 2),
+            })
+        return out
+
     def _return_flag(self, team: int) -> None:
         f = self.flags.get(team)
         if f is None:
             return
+        # Clear any in-progress hold for the previous carrier.
+        prev = f.get("carrier")
+        if prev is not None:
+            self._capture_progress.pop(prev, None)
         f["x"] = f["home_x"]
         f["y"] = f["home_y"]
         f["carrier"] = None
@@ -904,11 +986,10 @@ class GameState:
                 else:
                     f["x"] = p.x
                     f["y"] = p.y
-        # 2) Pickups + captures.
+        # 2) Pickups.
         for p in self.players.values():
             if not p.alive or p.team not in (1, 2):
                 continue
-            # Pickup enemy flag on touch.
             for team, f in self.flags.items():
                 if team == p.team or f["carrier"] is not None:
                     continue
@@ -918,28 +999,53 @@ class GameState:
                 if dx * dx + dy * dy <= rr * rr:
                     f["carrier"] = p.pid
                     p.has_flag_team = team
+                    self._capture_progress[p.pid] = 0.0
                     self.events.append({
                         "kind": "flag_pickup", "pid": p.pid, "team": team,
                     })
-            # Capture: carrier brings enemy flag home (own base).
-            if p.has_flag_team:
-                own = self.flags.get(p.team)
-                if own is not None:
-                    dx = p.x - own["home_x"]
-                    dy = p.y - own["home_y"]
-                    if dx * dx + dy * dy <= CTF_BASE_RADIUS * CTF_BASE_RADIUS:
-                        captured_team = p.has_flag_team
-                        self.team_caps[p.team] = self.team_caps.get(p.team, 0) + 1
-                        self._return_flag(captured_team)
-                        p.has_flag_team = 0
-                        self.events.append({
-                            "kind": "flag_capture", "pid": p.pid,
-                            "team": p.team, "captured": captured_team,
-                            "score": self.team_caps[p.team],
-                        })
-                        if self.team_caps[p.team] >= CTF_CAPTURES_TO_WIN:
-                            self.end_round()
-                            return
+        # 3) Capture progress: carrier must stand inside their OWN team's zone.
+        # Tick rate is fixed (game uses _tick_dt for sim). We can compute dt
+        # from the previous snapshot time; simpler: assume 1/tick_hz. The
+        # game step calls this once per tick from _step_movement.
+        dt = getattr(self, "_last_dt", 1.0 / 30.0)
+        scored: List[Tuple[str, int, int]] = []  # (pid, by_team, captured_team)
+        for team, zone in self.capture_zones.items():
+            other_team = 2 if team == 1 else 1
+            f = self.flags.get(other_team)
+            if not f or f.get("carrier") is None:
+                continue
+            cid = f["carrier"]
+            p = self.players.get(cid)
+            if p is None or not p.alive or p.team != team:
+                continue
+            dx = p.x - zone["x"]
+            dy = p.y - zone["y"]
+            in_zone = (dx * dx + dy * dy) <= (zone["radius"] * zone["radius"])
+            if in_zone:
+                cur = self._capture_progress.get(cid, 0.0) + dt
+                if cur >= CTF_HOLD_SECONDS:
+                    scored.append((cid, team, other_team))
+                    self._capture_progress[cid] = 0.0
+                else:
+                    self._capture_progress[cid] = cur
+            else:
+                # Reset on leaving the zone — keeps the rule simple.
+                if self._capture_progress.get(cid, 0.0) > 0.0:
+                    self._capture_progress[cid] = 0.0
+        for cid, by_team, captured_team in scored:
+            self.team_caps[by_team] = self.team_caps.get(by_team, 0) + 1
+            self._return_flag(captured_team)
+            p = self.players.get(cid)
+            if p is not None:
+                p.has_flag_team = 0
+            self.events.append({
+                "kind": "flag_capture", "pid": cid,
+                "team": by_team, "captured": captured_team,
+                "score": self.team_caps[by_team],
+            })
+            if self.team_caps[by_team] >= CTF_CAPTURES_TO_WIN:
+                self.end_round()
+                return
 
 
 # ---------------------------------------------------------------------------
