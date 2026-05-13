@@ -7569,3 +7569,541 @@
 2026-05-13 12:07:59,206 FIRE pid=c938df29 who=BOT:Bomber power=Grenade kind=projectile hp=38/110.0
 2026-05-13 12:07:59,206 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=88/100.0
 2026-05-13 12:07:59,206 FIRE pid=08758df0 who=BOT:Bruiser power=Hammer kind=melee hp=40/150.0
+2026-05-13 12:07:59,482 STALEMATE pid=18681559 who=BOT:Paladin forcing aggression
+2026-05-13 12:07:59,483 STALEMATE pid=97a7d522 who=BOT:Cannoneer forcing aggression
+2026-05-13 12:07:59,585 FIRE pid=7889b34e who=BOT:Ranger power=Arrow kind=projectile hp=58/100.0
+2026-05-13 12:07:59,653 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=173/220.0
+2026-05-13 12:07:59,723 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=88/100.0
+2026-05-13 12:07:59,895 FIRE pid=37cb4710 who=BOT:GlassCannon power=Lance kind=projectile hp=13/50.0
+2026-05-13 12:07:59,930 FIRE pid=824f3530 who=BOT:Sniper power=Snipe kind=projectile hp=70/70.0
+2026-05-13 12:08:00,035 FIRE pid=18681559 who=BOT:Paladin power=Smite kind=melee hp=95/180.0
+2026-05-13 12:08:00,035 FIRE pid=c938df29 who=BOT:Bomber power=Roll Away kind=dash hp=38/110.0
+2026-05-13 12:08:00,069 FIRE pid=6e6ee9be who=BOT:IceTank power=Cleave kind=melee hp=173/220.0
+2026-05-13 12:08:00,102 FIRE pid=7889b34e who=BOT:Ranger power=Arrow kind=projectile hp=58/100.0
+2026-05-13 12:08:00,171 FIRE pid=c938df29 who=BOT:Bomber power=Grenade kind=projectile hp=38/110.0
+2026-05-13 12:08:00,240 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=88/100.0
+2026-05-13 12:08:00,240 FIRE pid=08758df0 who=BOT:Bruiser power=Wall kind=shield hp=40/150.0
+2026-05-13 12:08:00,240 FIRE pid=18efb9b1 who=BOT:Stormcaller power=Storm kind=area hp=55/90.0
+2026-05-13 12:08:00,308 TARGET pid=18681559 who=BOT:Paladin arch=tank -> BOT:Ranger dist=748 skill=0.58
+2026-05-13 12:08:00,309 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:Ranger dist=731 skill=0.74
+2026-05-13 12:08:00,343 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=173/220.0
+2026-05-13 12:08:00,378 KILL pid=7889b34e who=BOT:Ranger total_kills=4
+2026-05-13 12:08:00,378 DEATH pid=3bd025ee who=BOT:Shotgunner lives_left=0
+2026-05-13 12:08:00,378 ELIMINATED pid=3bd025ee who=BOT:Shotgunner
+2026-05-13 12:08:01,200 TARGET pid=6e6ee9be who=BOT:IceTank arch=tank -> BOT:Cannoneer dist=634 skill=0.73
+2026-05-13 12:08:01,200 TARGET pid=c938df29 who=BOT:Bomber arch=ranged -> BOT:Cannoneer dist=926 skill=0.73
+2026-05-13 12:08:01,200 TARGET pid=824f3530 who=BOT:Sniper arch=ranged -> BOT:Cannoneer dist=871 skill=0.61
+2026-05-13 12:08:01,200 TARGET pid=c157f2f1 who=BOT:Stunner arch=ranged -> BOT:Cannoneer dist=873 skill=0.67
+2026-05-13 12:08:01,201 TARGET pid=08758df0 who=BOT:Bruiser arch=tank -> BOT:Cannoneer dist=828 skill=0.57
+2026-05-13 12:08:01,201 TARGET pid=18efb9b1 who=BOT:Stormcaller arch=ranged -> BOT:Cannoneer dist=750 skill=0.62
+2026-05-13 12:08:01,201 TARGET pid=37cb4710 who=BOT:GlassCannon arch=ranged -> BOT:Cannoneer dist=990 skill=0.67
+2026-05-13 12:08:01,267 FIRE pid=18681559 who=BOT:Paladin power=Smite kind=melee hp=75/180.0
+2026-05-13 12:08:01,267 FIRE pid=c938df29 who=BOT:Bomber power=Grenade kind=projectile hp=38/110.0
+2026-05-13 12:08:01,268 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=88/100.0
+2026-05-13 12:08:01,268 FUMBLE pid=08758df0 power=Hammer skill=0.57
+2026-05-13 12:08:01,268 FIRE pid=37cb4710 who=BOT:GlassCannon power=Lance kind=projectile hp=13/50.0
+2026-05-13 12:08:01,303 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=173/220.0
+2026-05-13 12:08:01,303 FIRE pid=824f3530 who=BOT:Sniper power=Reposition kind=dash hp=70/70.0
+2026-05-13 12:08:01,304 FIRE pid=97a7d522 who=BOT:Cannoneer power=Cannon kind=projectile hp=8/130.0
+2026-05-13 12:08:01,405 FIRE pid=82aed362 who=BOT:Cleric power=Bless kind=heal hp=120/120.0
+2026-05-13 12:08:01,439 FIRE pid=6e6ee9be who=BOT:IceTank power=Cleave kind=melee hp=173/220.0
+2026-05-13 12:08:01,440 FIRE pid=37cb4710 who=BOT:GlassCannon power=Vanish kind=dash hp=13/50.0
+2026-05-13 12:08:01,475 FIRE pid=08758df0 who=BOT:Bruiser power=Hammer kind=melee hp=40/150.0
+2026-05-13 12:08:01,750 FIRE pid=db0408e7 who=BOT:Medic power=Regen Pool kind=area hp=120/120.0
+2026-05-13 12:08:01,784 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=88/100.0
+2026-05-13 12:08:01,784 FIRE pid=18efb9b1 who=BOT:Stormcaller power=Hail kind=area hp=55/90.0
+2026-05-13 12:08:01,990 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=173/220.0
+2026-05-13 12:08:02,163 FIRE pid=824f3530 who=BOT:Sniper power=Snipe kind=projectile hp=70/70.0
+2026-05-13 12:08:02,232 FIRE pid=c938df29 who=BOT:Bomber power=Grenade kind=projectile hp=50/110.0
+2026-05-13 12:08:02,266 STALEMATE pid=6e6ee9be who=BOT:IceTank forcing aggression
+2026-05-13 12:08:02,267 STALEMATE pid=c938df29 who=BOT:Bomber forcing aggression
+2026-05-13 12:08:02,267 STALEMATE pid=824f3530 who=BOT:Sniper forcing aggression
+2026-05-13 12:08:02,267 STALEMATE pid=c157f2f1 who=BOT:Stunner forcing aggression
+2026-05-13 12:08:02,267 STALEMATE pid=08758df0 who=BOT:Bruiser forcing aggression
+2026-05-13 12:08:02,267 STALEMATE pid=37cb4710 who=BOT:GlassCannon forcing aggression
+2026-05-13 12:08:02,302 FIRE pid=18681559 who=BOT:Paladin power=Smite kind=melee hp=70/180.0
+2026-05-13 12:08:02,302 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=88/100.0
+2026-05-13 12:08:02,337 LOW_HP pid=18681559 who=BOT:Paladin hp=22%
+2026-05-13 12:08:02,476 FIRE pid=18efb9b1 who=BOT:Stormcaller power=Storm kind=area hp=55/90.0
+2026-05-13 12:08:02,476 FIRE pid=37cb4710 who=BOT:GlassCannon power=Lance kind=projectile hp=13/50.0
+2026-05-13 12:08:02,683 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=173/220.0
+2026-05-13 12:08:02,718 FIRE pid=08758df0 who=BOT:Bruiser power=Hammer kind=melee hp=40/150.0
+2026-05-13 12:08:02,823 FIRE pid=6e6ee9be who=BOT:IceTank power=Cleave kind=melee hp=173/220.0
+2026-05-13 12:08:02,824 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=88/100.0
+2026-05-13 12:08:02,824 STALEMATE pid=18efb9b1 who=BOT:Stormcaller forcing aggression
+2026-05-13 12:08:03,066 FIRE pid=c938df29 who=BOT:Bomber power=Roll Away kind=dash hp=62/110.0
+2026-05-13 12:08:03,100 STALEMATE pid=db0408e7 who=BOT:Medic forcing aggression
+2026-05-13 12:08:03,100 TARGET pid=db0408e7 who=BOT:Medic arch=healer -> BOT:Cannoneer dist=173 skill=0.82
+2026-05-13 12:08:03,202 FIRE pid=db0408e7 who=BOT:Medic power=Dart kind=projectile hp=120/120.0
+2026-05-13 12:08:03,202 FIRE pid=c938df29 who=BOT:Bomber power=Grenade kind=projectile hp=62/110.0
+2026-05-13 12:08:03,236 FIRE pid=18681559 who=BOT:Paladin power=Bastion kind=shield hp=40/180.0
+2026-05-13 12:08:03,237 FIRE pid=97a7d522 who=BOT:Cannoneer power=Cannon kind=projectile hp=8/130.0
+2026-05-13 12:08:03,337 FIRE pid=18681559 who=BOT:Paladin power=Smite kind=melee hp=40/180.0
+2026-05-13 12:08:03,338 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=88/100.0
+2026-05-13 12:08:03,372 TARGET pid=6e6ee9be who=BOT:IceTank arch=tank -> BOT:Paladin dist=157 skill=0.73
+2026-05-13 12:08:03,372 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=173/220.0
+2026-05-13 12:08:03,372 TARGET pid=db0408e7 who=BOT:Medic arch=healer -> BOT:Paladin dist=106 skill=0.82
+2026-05-13 12:08:03,373 TARGET pid=c938df29 who=BOT:Bomber arch=ranged -> BOT:Paladin dist=74 skill=0.73
+2026-05-13 12:08:03,373 TARGET pid=824f3530 who=BOT:Sniper arch=ranged -> BOT:Paladin dist=122 skill=0.61
+2026-05-13 12:08:03,373 TARGET pid=c157f2f1 who=BOT:Stunner arch=ranged -> BOT:Paladin dist=95 skill=0.67
+2026-05-13 12:08:03,373 KILL pid=c157f2f1 who=BOT:Stunner total_kills=2
+2026-05-13 12:08:03,373 TARGET pid=08758df0 who=BOT:Bruiser arch=tank -> BOT:Paladin dist=51 skill=0.57
+2026-05-13 12:08:03,373 TARGET pid=18efb9b1 who=BOT:Stormcaller arch=ranged -> BOT:Paladin dist=116 skill=0.62
+2026-05-13 12:08:03,373 DEATH pid=97a7d522 who=BOT:Cannoneer lives_left=2
+2026-05-13 12:08:03,373 TARGET pid=37cb4710 who=BOT:GlassCannon arch=ranged -> BOT:Paladin dist=154 skill=0.67
+2026-05-13 12:08:03,615 FIRE pid=db0408e7 who=BOT:Medic power=Mend kind=heal hp=120/120.0
+2026-05-13 12:08:03,685 FIRE pid=37cb4710 who=BOT:GlassCannon power=Lance kind=projectile hp=13/50.0
+2026-05-13 12:08:03,751 FIRE pid=c938df29 who=BOT:Bomber power=Poison Cloud kind=area hp=42/110.0
+2026-05-13 12:08:03,785 TARGET pid=6e6ee9be who=BOT:IceTank arch=tank -> BOT:Cleric dist=160 skill=0.73
+2026-05-13 12:08:03,786 TARGET pid=db0408e7 who=BOT:Medic arch=healer -> BOT:Cleric dist=108 skill=0.82
+2026-05-13 12:08:03,786 TARGET pid=c938df29 who=BOT:Bomber arch=ranged -> BOT:Cleric dist=46 skill=0.73
+2026-05-13 12:08:03,786 TARGET pid=824f3530 who=BOT:Sniper arch=ranged -> BOT:Cleric dist=95 skill=0.61
+2026-05-13 12:08:03,786 TARGET pid=c157f2f1 who=BOT:Stunner arch=ranged -> BOT:Cleric dist=90 skill=0.67
+2026-05-13 12:08:03,786 TARGET pid=08758df0 who=BOT:Bruiser arch=tank -> BOT:Cleric dist=64 skill=0.57
+2026-05-13 12:08:03,786 TARGET pid=18efb9b1 who=BOT:Stormcaller arch=ranged -> BOT:Cleric dist=100 skill=0.62
+2026-05-13 12:08:03,786 TARGET pid=37cb4710 who=BOT:GlassCannon arch=ranged -> BOT:Cleric dist=125 skill=0.67
+2026-05-13 12:08:03,854 FIRE pid=c157f2f1 who=BOT:Stunner power=Net kind=area hp=100/100.0
+2026-05-13 12:08:03,888 FIRE pid=db0408e7 who=BOT:Medic power=Dart kind=projectile hp=120/120.0
+2026-05-13 12:08:03,956 FUMBLE pid=08758df0 power=Hammer skill=0.57
+2026-05-13 12:08:03,956 FIRE pid=08758df0 who=BOT:Bruiser power=Hammer kind=melee hp=46/150.0
+2026-05-13 12:08:04,023 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:04,058 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=179/220.0
+2026-05-13 12:08:04,161 TARGET pid=6e6ee9be who=BOT:IceTank arch=tank -> BOT:Paladin dist=73 skill=0.73
+2026-05-13 12:08:04,161 TARGET pid=db0408e7 who=BOT:Medic arch=healer -> BOT:Paladin dist=43 skill=0.82
+2026-05-13 12:08:04,161 TARGET pid=c938df29 who=BOT:Bomber arch=ranged -> BOT:Paladin dist=116 skill=0.73
+2026-05-13 12:08:04,162 FIRE pid=c938df29 who=BOT:Bomber power=Grenade kind=projectile hp=42/110.0
+2026-05-13 12:08:04,162 TARGET pid=824f3530 who=BOT:Sniper arch=ranged -> BOT:Paladin dist=142 skill=0.61
+2026-05-13 12:08:04,162 TARGET pid=c157f2f1 who=BOT:Stunner arch=ranged -> BOT:Paladin dist=75 skill=0.67
+2026-05-13 12:08:04,162 TARGET pid=08758df0 who=BOT:Bruiser arch=tank -> BOT:Paladin dist=93 skill=0.57
+2026-05-13 12:08:04,162 TARGET pid=18efb9b1 who=BOT:Stormcaller arch=ranged -> BOT:Paladin dist=52 skill=0.62
+2026-05-13 12:08:04,162 TARGET pid=37cb4710 who=BOT:GlassCannon arch=ranged -> BOT:Paladin dist=103 skill=0.67
+2026-05-13 12:08:04,197 FIRE pid=6e6ee9be who=BOT:IceTank power=Cleave kind=melee hp=179/220.0
+2026-05-13 12:08:04,400 FIRE pid=824f3530 who=BOT:Sniper power=Snipe kind=projectile hp=70/70.0
+2026-05-13 12:08:04,468 FUMBLE pid=6e6ee9be power=Bulwark skill=0.73
+2026-05-13 12:08:04,500 TARGET pid=6e6ee9be who=BOT:IceTank arch=tank -> BOT:Cleric dist=99 skill=0.73
+2026-05-13 12:08:04,500 TARGET pid=db0408e7 who=BOT:Medic arch=healer -> BOT:Cleric dist=80 skill=0.82
+2026-05-13 12:08:04,501 DEATH pid=18681559 who=BOT:Paladin lives_left=1
+2026-05-13 12:08:04,501 TARGET pid=c938df29 who=BOT:Bomber arch=ranged -> BOT:Cleric dist=72 skill=0.73
+2026-05-13 12:08:04,501 TARGET pid=824f3530 who=BOT:Sniper arch=ranged -> BOT:Cleric dist=91 skill=0.61
+2026-05-13 12:08:04,501 KILL pid=824f3530 who=BOT:Sniper total_kills=1
+2026-05-13 12:08:04,501 TARGET pid=c157f2f1 who=BOT:Stunner arch=ranged -> BOT:Cleric dist=51 skill=0.67
+2026-05-13 12:08:04,501 TARGET pid=82aed362 who=BOT:Cleric arch=healer -> BOT:Ranger dist=424 skill=0.68
+2026-05-13 12:08:04,501 TARGET pid=08758df0 who=BOT:Bruiser arch=tank -> BOT:Cleric dist=26 skill=0.57
+2026-05-13 12:08:04,501 TARGET pid=18efb9b1 who=BOT:Stormcaller arch=ranged -> BOT:Cleric dist=92 skill=0.62
+2026-05-13 12:08:04,501 TARGET pid=37cb4710 who=BOT:GlassCannon arch=ranged -> BOT:Cleric dist=128 skill=0.67
+2026-05-13 12:08:04,535 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:04,536 FIRE pid=82aed362 who=BOT:Cleric power=Light kind=projectile hp=68/120.0
+2026-05-13 12:08:04,536 FIRE pid=37cb4710 who=BOT:GlassCannon power=Vanish kind=dash hp=13/50.0
+2026-05-13 12:08:04,570 FIRE pid=db0408e7 who=BOT:Medic power=Dart kind=projectile hp=120/120.0
+2026-05-13 12:08:04,570 FIRE pid=824f3530 who=BOT:Sniper power=Reposition kind=dash hp=70/70.0
+2026-05-13 12:08:04,605 FIRE pid=6e6ee9be who=BOT:IceTank power=Bulwark kind=shield hp=185/220.0
+2026-05-13 12:08:04,709 FIRE pid=18efb9b1 who=BOT:Stormcaller power=Storm kind=area hp=61/90.0
+2026-05-13 12:08:04,744 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=191/220.0
+2026-05-13 12:08:05,056 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:05,056 FIRE pid=82aed362 who=BOT:Cleric power=Light kind=projectile hp=37/120.0
+2026-05-13 12:08:05,057 FIRE pid=37cb4710 who=BOT:GlassCannon power=Lance kind=projectile hp=13/50.0
+2026-05-13 12:08:05,091 LOW_HP pid=82aed362 who=BOT:Cleric hp=21%
+2026-05-13 12:08:05,125 FIRE pid=c938df29 who=BOT:Bomber power=Grenade kind=projectile hp=42/110.0
+2026-05-13 12:08:05,160 DEATH pid=82aed362 who=BOT:Cleric lives_left=1
+2026-05-13 12:08:05,160 KILL pid=37cb4710 who=BOT:GlassCannon total_kills=6
+2026-05-13 12:08:06,384 TARGET pid=6e6ee9be who=BOT:IceTank arch=tank -> BOT:Cannoneer dist=499 skill=0.73
+2026-05-13 12:08:06,384 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=197/220.0
+2026-05-13 12:08:06,384 TARGET pid=db0408e7 who=BOT:Medic arch=healer -> BOT:Cannoneer dist=567 skill=0.82
+2026-05-13 12:08:06,384 TARGET pid=c938df29 who=BOT:Bomber arch=ranged -> BOT:Cannoneer dist=456 skill=0.73
+2026-05-13 12:08:06,384 TARGET pid=824f3530 who=BOT:Sniper arch=ranged -> BOT:Cannoneer dist=518 skill=0.61
+2026-05-13 12:08:06,384 TARGET pid=c157f2f1 who=BOT:Stunner arch=ranged -> BOT:Cannoneer dist=161 skill=0.67
+2026-05-13 12:08:06,384 TARGET pid=08758df0 who=BOT:Bruiser arch=tank -> BOT:Cannoneer dist=457 skill=0.57
+2026-05-13 12:08:06,385 TARGET pid=18efb9b1 who=BOT:Stormcaller arch=ranged -> BOT:Cannoneer dist=119 skill=0.62
+2026-05-13 12:08:06,385 FIRE pid=97a7d522 who=BOT:Cannoneer power=Cannon kind=projectile hp=130/130.0
+2026-05-13 12:08:06,385 RESPAWN pid=97a7d522 who=BOT:Cannoneer lives_left=2
+2026-05-13 12:08:06,385 TARGET pid=37cb4710 who=BOT:GlassCannon arch=ranged -> BOT:Cannoneer dist=540 skill=0.67
+2026-05-13 12:08:06,419 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:06,419 FIRE pid=08758df0 who=BOT:Bruiser power=Hammer kind=melee hp=58/150.0
+2026-05-13 12:08:06,420 FIRE pid=18efb9b1 who=BOT:Stormcaller power=Hail kind=area hp=61/90.0
+2026-05-13 12:08:06,420 FIRE pid=37cb4710 who=BOT:GlassCannon power=Lance kind=projectile hp=19/50.0
+2026-05-13 12:08:06,454 FIRE pid=db0408e7 who=BOT:Medic power=Dart kind=projectile hp=120/120.0
+2026-05-13 12:08:06,488 FIRE pid=c938df29 who=BOT:Bomber power=Grenade kind=projectile hp=42/110.0
+2026-05-13 12:08:06,523 FIRE pid=6e6ee9be who=BOT:IceTank power=Cleave kind=melee hp=197/220.0
+2026-05-13 12:08:06,626 FIRE pid=c938df29 who=BOT:Bomber power=Roll Away kind=dash hp=42/110.0
+2026-05-13 12:08:06,626 FIRE pid=824f3530 who=BOT:Sniper power=Snipe kind=projectile hp=70/70.0
+2026-05-13 12:08:06,626 FIRE pid=08758df0 who=BOT:Bruiser power=Wall kind=shield hp=58/150.0
+2026-05-13 12:08:06,801 STALEMATE pid=97a7d522 who=BOT:Cannoneer forcing aggression
+2026-05-13 12:08:06,937 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:06,938 FIRE pid=18efb9b1 who=BOT:Stormcaller power=Storm kind=area hp=33/90.0
+2026-05-13 12:08:07,073 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=197/220.0
+2026-05-13 12:08:07,450 FIRE pid=c938df29 who=BOT:Bomber power=Grenade kind=projectile hp=42/110.0
+2026-05-13 12:08:07,451 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:07,555 STALEMATE pid=18681559 who=BOT:Paladin forcing aggression
+2026-05-13 12:08:07,555 FIRE pid=18681559 who=BOT:Paladin power=Smite kind=melee hp=180/180.0
+2026-05-13 12:08:07,555 RESPAWN pid=18681559 who=BOT:Paladin lives_left=1
+2026-05-13 12:08:07,624 FIRE pid=6e6ee9be who=BOT:IceTank power=Cleave kind=melee hp=197/220.0
+2026-05-13 12:08:07,625 FIRE pid=37cb4710 who=BOT:GlassCannon power=Lance kind=projectile hp=19/50.0
+2026-05-13 12:08:07,661 FIRE pid=824f3530 who=BOT:Sniper power=Reposition kind=dash hp=70/70.0
+2026-05-13 12:08:07,661 FIRE pid=08758df0 who=BOT:Bruiser power=Hammer kind=melee hp=58/150.0
+2026-05-13 12:08:07,766 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=197/220.0
+2026-05-13 12:08:07,767 FIRE pid=18681559 who=BOT:Paladin power=LayOnHands kind=heal hp=180/180.0
+2026-05-13 12:08:07,800 FIRE pid=37cb4710 who=BOT:GlassCannon power=Vanish kind=dash hp=19/50.0
+2026-05-13 12:08:07,970 FUMBLE pid=c157f2f1 power=Bolt skill=0.67
+2026-05-13 12:08:07,970 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:08,144 STALEMATE pid=82aed362 who=BOT:Cleric forcing aggression
+2026-05-13 12:08:08,144 FIRE pid=82aed362 who=BOT:Cleric power=Light kind=projectile hp=120/120.0
+2026-05-13 12:08:08,144 RESPAWN pid=82aed362 who=BOT:Cleric lives_left=1
+2026-05-13 12:08:08,316 FIRE pid=82aed362 who=BOT:Cleric power=Bless kind=heal hp=120/120.0
+2026-05-13 12:08:08,316 FUMBLE pid=97a7d522 power=Cannon skill=0.74
+2026-05-13 12:08:08,317 FIRE pid=97a7d522 who=BOT:Cannoneer power=Cannon kind=projectile hp=63/130.0
+2026-05-13 12:08:08,420 FUMBLE pid=c938df29 power=Grenade skill=0.73
+2026-05-13 12:08:08,421 FIRE pid=c938df29 who=BOT:Bomber power=Grenade kind=projectile hp=42/110.0
+2026-05-13 12:08:08,456 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=197/220.0
+2026-05-13 12:08:08,491 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:08,594 FIRE pid=18681559 who=BOT:Paladin power=Smite kind=melee hp=172/180.0
+2026-05-13 12:08:08,628 FIRE pid=db0408e7 who=BOT:Medic power=Mend kind=heal hp=120/120.0
+2026-05-13 12:08:08,664 FIRE pid=82aed362 who=BOT:Cleric power=Light kind=projectile hp=120/120.0
+2026-05-13 12:08:08,732 FIRE pid=6e6ee9be who=BOT:IceTank power=Cleave kind=melee hp=197/220.0
+2026-05-13 12:08:08,766 FIRE pid=db0408e7 who=BOT:Medic power=Regen Pool kind=area hp=120/120.0
+2026-05-13 12:08:08,834 FIRE pid=c938df29 who=BOT:Bomber power=Poison Cloud kind=area hp=42/110.0
+2026-05-13 12:08:08,834 FIRE pid=37cb4710 who=BOT:GlassCannon power=Lance kind=projectile hp=25/50.0
+2026-05-13 12:08:08,869 FIRE pid=824f3530 who=BOT:Sniper power=Snipe kind=projectile hp=70/70.0
+2026-05-13 12:08:08,904 FIRE pid=08758df0 who=BOT:Bruiser power=Hammer kind=melee hp=58/150.0
+2026-05-13 12:08:09,007 FUMBLE pid=c157f2f1 power=Bolt skill=0.67
+2026-05-13 12:08:09,007 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:09,147 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=197/220.0
+2026-05-13 12:08:09,181 FUMBLE pid=82aed362 power=Light skill=0.68
+2026-05-13 12:08:09,181 FIRE pid=82aed362 who=BOT:Cleric power=Light kind=projectile hp=120/120.0
+2026-05-13 12:08:09,182 FIRE pid=18efb9b1 who=BOT:Stormcaller power=Storm kind=area hp=33/90.0
+2026-05-13 12:08:09,389 FIRE pid=c938df29 who=BOT:Bomber power=Grenade kind=projectile hp=42/110.0
+2026-05-13 12:08:09,424 FIRE pid=18681559 who=BOT:Paladin power=Bastion kind=shield hp=172/180.0
+2026-05-13 12:08:09,528 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:09,633 FIRE pid=db0408e7 who=BOT:Medic power=Dart kind=projectile hp=120/120.0
+2026-05-13 12:08:09,633 FIRE pid=18681559 who=BOT:Paladin power=Smite kind=melee hp=172/180.0
+2026-05-13 12:08:09,667 FIRE pid=c938df29 who=BOT:Bomber power=Roll Away kind=dash hp=42/110.0
+2026-05-13 12:08:09,702 FIRE pid=82aed362 who=BOT:Cleric power=Light kind=projectile hp=120/120.0
+2026-05-13 12:08:09,837 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=197/220.0
+2026-05-13 12:08:09,872 FIRE pid=c157f2f1 who=BOT:Stunner power=Net kind=area hp=100/100.0
+2026-05-13 12:08:09,975 FIRE pid=6e6ee9be who=BOT:IceTank power=Cleave kind=melee hp=197/220.0
+2026-05-13 12:08:10,044 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:10,044 FIRE pid=37cb4710 who=BOT:GlassCannon power=Lance kind=projectile hp=37/50.0
+2026-05-13 12:08:10,149 FIRE pid=08758df0 who=BOT:Bruiser power=Hammer kind=melee hp=58/150.0
+2026-05-13 12:08:10,218 FIRE pid=82aed362 who=BOT:Cleric power=Light kind=projectile hp=120/120.0
+2026-05-13 12:08:10,253 FIRE pid=97a7d522 who=BOT:Cannoneer power=Cannon kind=projectile hp=63/130.0
+2026-05-13 12:08:10,321 FIRE pid=db0408e7 who=BOT:Medic power=Dart kind=projectile hp=120/120.0
+2026-05-13 12:08:10,357 FUMBLE pid=c938df29 power=Grenade skill=0.73
+2026-05-13 12:08:10,357 FIRE pid=c938df29 who=BOT:Bomber power=Grenade kind=projectile hp=42/110.0
+2026-05-13 12:08:10,532 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=197/220.0
+2026-05-13 12:08:10,567 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:10,567 FIRE pid=18efb9b1 who=BOT:Stormcaller power=Hail kind=area hp=33/90.0
+2026-05-13 12:08:10,668 FIRE pid=6e6ee9be who=BOT:IceTank power=Bulwark kind=shield hp=197/220.0
+2026-05-13 12:08:10,668 FIRE pid=18681559 who=BOT:Paladin power=Smite kind=melee hp=172/180.0
+2026-05-13 12:08:10,736 FIRE pid=82aed362 who=BOT:Cleric power=Light kind=projectile hp=120/120.0
+2026-05-13 12:08:10,770 FIRE pid=824f3530 who=BOT:Sniper power=Reposition kind=dash hp=70/70.0
+2026-05-13 12:08:10,804 STALEMATE pid=97a7d522 who=BOT:Cannoneer forcing aggression
+2026-05-13 12:08:10,905 FIRE pid=37cb4710 who=BOT:GlassCannon power=Vanish kind=dash hp=37/50.0
+2026-05-13 12:08:10,973 FIRE pid=db0408e7 who=BOT:Medic power=Dart kind=projectile hp=120/120.0
+2026-05-13 12:08:11,080 FIRE pid=6e6ee9be who=BOT:IceTank power=Cleave kind=melee hp=197/220.0
+2026-05-13 12:08:11,080 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:11,115 FIRE pid=824f3530 who=BOT:Sniper power=Snipe kind=projectile hp=70/70.0
+2026-05-13 12:08:11,218 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=197/220.0
+2026-05-13 12:08:11,253 FIRE pid=82aed362 who=BOT:Cleric power=Light kind=projectile hp=120/120.0
+2026-05-13 12:08:11,253 FIRE pid=37cb4710 who=BOT:GlassCannon power=Lance kind=projectile hp=37/50.0
+2026-05-13 12:08:11,323 FIRE pid=c938df29 who=BOT:Bomber power=Grenade kind=projectile hp=42/110.0
+2026-05-13 12:08:11,390 FIRE pid=08758df0 who=BOT:Bruiser power=Hammer kind=melee hp=58/150.0
+2026-05-13 12:08:11,426 FIRE pid=18efb9b1 who=BOT:Stormcaller power=Storm kind=area hp=33/90.0
+2026-05-13 12:08:11,565 STALEMATE pid=18681559 who=BOT:Paladin forcing aggression
+2026-05-13 12:08:11,565 LOW_HP pid=97a7d522 who=BOT:Cannoneer hp=2%
+2026-05-13 12:08:11,599 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:11,700 FIRE pid=18681559 who=BOT:Paladin power=Smite kind=melee hp=172/180.0
+2026-05-13 12:08:11,774 FIRE pid=82aed362 who=BOT:Cleric power=Light kind=projectile hp=120/120.0
+2026-05-13 12:08:11,912 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=197/220.0
+2026-05-13 12:08:12,059 FIRE pid=97a7d522 who=BOT:Cannoneer power=Cannon kind=projectile hp=3/130.0
+2026-05-13 12:08:12,127 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:12,197 FIRE pid=6e6ee9be who=BOT:IceTank power=Cleave kind=melee hp=197/220.0
+2026-05-13 12:08:12,301 FIRE pid=c938df29 who=BOT:Bomber power=Grenade kind=projectile hp=42/110.0
+2026-05-13 12:08:12,335 FIRE pid=82aed362 who=BOT:Cleric power=Bless kind=heal hp=120/120.0
+2026-05-13 12:08:12,471 FIRE pid=37cb4710 who=BOT:GlassCannon power=Lance kind=projectile hp=37/50.0
+2026-05-13 12:08:12,609 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=197/220.0
+2026-05-13 12:08:12,610 FIRE pid=08758df0 who=BOT:Bruiser power=Hammer kind=melee hp=70/150.0
+2026-05-13 12:08:12,610 KILL pid=08758df0 who=BOT:Bruiser total_kills=2
+2026-05-13 12:08:12,610 TARGET pid=18efb9b1 who=BOT:Stormcaller arch=ranged -> BOT:Cleric dist=394 skill=0.62
+2026-05-13 12:08:12,610 DEATH pid=97a7d522 who=BOT:Cannoneer lives_left=1
+2026-05-13 12:08:12,610 TARGET pid=37cb4710 who=BOT:GlassCannon arch=ranged -> BOT:Cleric dist=354 skill=0.67
+2026-05-13 12:08:12,645 TARGET pid=6e6ee9be who=BOT:IceTank arch=tank -> BOT:Cleric dist=67 skill=0.73
+2026-05-13 12:08:12,645 TARGET pid=c938df29 who=BOT:Bomber arch=ranged -> BOT:Cleric dist=397 skill=0.73
+2026-05-13 12:08:12,646 TARGET pid=824f3530 who=BOT:Sniper arch=ranged -> BOT:Cleric dist=341 skill=0.61
+2026-05-13 12:08:12,646 TARGET pid=c157f2f1 who=BOT:Stunner arch=ranged -> BOT:Cleric dist=396 skill=0.67
+2026-05-13 12:08:12,646 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:12,646 STALEMATE pid=82aed362 who=BOT:Cleric forcing aggression
+2026-05-13 12:08:12,646 FIRE pid=82aed362 who=BOT:Cleric power=Light kind=projectile hp=102/120.0
+2026-05-13 12:08:12,646 TARGET pid=08758df0 who=BOT:Bruiser arch=tank -> BOT:Cleric dist=98 skill=0.57
+2026-05-13 12:08:12,715 FIRE pid=18681559 who=BOT:Paladin power=Smite kind=melee hp=172/180.0
+2026-05-13 12:08:12,715 FIRE pid=c938df29 who=BOT:Bomber power=Roll Away kind=dash hp=42/110.0
+2026-05-13 12:08:12,819 FIRE pid=08758df0 who=BOT:Bruiser power=Wall kind=shield hp=70/150.0
+2026-05-13 12:08:13,163 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:13,163 FIRE pid=82aed362 who=BOT:Cleric power=Light kind=projectile hp=60/120.0
+2026-05-13 12:08:13,267 FIRE pid=c938df29 who=BOT:Bomber power=Grenade kind=projectile hp=42/110.0
+2026-05-13 12:08:13,301 FIRE pid=6e6ee9be who=BOT:IceTank power=Cleave kind=melee hp=197/220.0
+2026-05-13 12:08:13,368 TARGET pid=6e6ee9be who=BOT:IceTank arch=tank -> BOT:Paladin dist=48 skill=0.73
+2026-05-13 12:08:13,368 TARGET pid=c938df29 who=BOT:Bomber arch=ranged -> BOT:Paladin dist=245 skill=0.73
+2026-05-13 12:08:13,368 TARGET pid=824f3530 who=BOT:Sniper arch=ranged -> BOT:Paladin dist=304 skill=0.61
+2026-05-13 12:08:13,368 FIRE pid=824f3530 who=BOT:Sniper power=Snipe kind=projectile hp=70/70.0
+2026-05-13 12:08:13,368 TARGET pid=c157f2f1 who=BOT:Stunner arch=ranged -> BOT:Paladin dist=365 skill=0.67
+2026-05-13 12:08:13,368 TARGET pid=08758df0 who=BOT:Bruiser arch=tank -> BOT:Paladin dist=181 skill=0.57
+2026-05-13 12:08:13,368 TARGET pid=18efb9b1 who=BOT:Stormcaller arch=ranged -> BOT:Paladin dist=340 skill=0.62
+2026-05-13 12:08:13,368 TARGET pid=37cb4710 who=BOT:GlassCannon arch=ranged -> BOT:Paladin dist=288 skill=0.67
+2026-05-13 12:08:13,436 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=197/220.0
+2026-05-13 12:08:13,537 FIRE pid=7889b34e who=BOT:Ranger power=Arrow kind=projectile hp=42/100.0
+2026-05-13 12:08:13,639 FIRE pid=db0408e7 who=BOT:Medic power=Mend kind=heal hp=120/120.0
+2026-05-13 12:08:13,674 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:13,674 FIRE pid=82aed362 who=BOT:Cleric power=Light kind=projectile hp=38/120.0
+2026-05-13 12:08:13,674 FIRE pid=18efb9b1 who=BOT:Stormcaller power=Storm kind=area hp=33/90.0
+2026-05-13 12:08:13,674 FIRE pid=37cb4710 who=BOT:GlassCannon power=Lance kind=projectile hp=37/50.0
+2026-05-13 12:08:13,743 FIRE pid=18681559 who=BOT:Paladin power=Smite kind=melee hp=172/180.0
+2026-05-13 12:08:13,845 FIRE pid=08758df0 who=BOT:Bruiser power=Hammer kind=melee hp=70/150.0
+2026-05-13 12:08:13,880 FIRE pid=824f3530 who=BOT:Sniper power=Reposition kind=dash hp=70/70.0
+2026-05-13 12:08:13,949 FIRE pid=c938df29 who=BOT:Bomber power=Poison Cloud kind=area hp=42/110.0
+2026-05-13 12:08:14,018 FIRE pid=37cb4710 who=BOT:GlassCannon power=Vanish kind=dash hp=37/50.0
+2026-05-13 12:08:14,119 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=197/220.0
+2026-05-13 12:08:14,188 FUMBLE pid=c157f2f1 power=Bolt skill=0.67
+2026-05-13 12:08:14,188 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:14,189 FIRE pid=82aed362 who=BOT:Cleric power=Light kind=projectile hp=38/120.0
+2026-05-13 12:08:14,223 FIRE pid=c938df29 who=BOT:Bomber power=Grenade kind=projectile hp=42/110.0
+2026-05-13 12:08:14,533 FIRE pid=6e6ee9be who=BOT:IceTank power=Cleave kind=melee hp=197/220.0
+2026-05-13 12:08:14,633 TARGET pid=db0408e7 who=BOT:Medic arch=healer -> BOT:Paladin dist=63 skill=0.82
+2026-05-13 12:08:14,666 FIRE pid=db0408e7 who=BOT:Medic power=Dart kind=projectile hp=120/120.0
+2026-05-13 12:08:14,701 FUMBLE pid=c157f2f1 power=Bolt skill=0.67
+2026-05-13 12:08:14,701 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:14,701 FIRE pid=82aed362 who=BOT:Cleric power=Light kind=projectile hp=38/120.0
+2026-05-13 12:08:14,701 FIRE pid=18efb9b1 who=BOT:Stormcaller power=Hail kind=area hp=33/90.0
+2026-05-13 12:08:14,770 FIRE pid=18681559 who=BOT:Paladin power=Smite kind=melee hp=140/180.0
+2026-05-13 12:08:14,805 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=197/220.0
+2026-05-13 12:08:14,840 TARGET pid=6e6ee9be who=BOT:IceTank arch=tank -> BOT:Cleric dist=146 skill=0.73
+2026-05-13 12:08:14,840 TARGET pid=db0408e7 who=BOT:Medic arch=healer -> BOT:Cleric dist=117 skill=0.82
+2026-05-13 12:08:14,840 TARGET pid=c938df29 who=BOT:Bomber arch=ranged -> BOT:Cleric dist=399 skill=0.73
+2026-05-13 12:08:14,840 TARGET pid=824f3530 who=BOT:Sniper arch=ranged -> BOT:Cleric dist=346 skill=0.61
+2026-05-13 12:08:14,840 TARGET pid=c157f2f1 who=BOT:Stunner arch=ranged -> BOT:Cleric dist=451 skill=0.67
+2026-05-13 12:08:14,841 TARGET pid=08758df0 who=BOT:Bruiser arch=tank -> BOT:Cleric dist=139 skill=0.57
+2026-05-13 12:08:14,841 TARGET pid=18efb9b1 who=BOT:Stormcaller arch=ranged -> BOT:Cleric dist=482 skill=0.62
+2026-05-13 12:08:14,841 TARGET pid=37cb4710 who=BOT:GlassCannon arch=ranged -> BOT:Cleric dist=315 skill=0.67
+2026-05-13 12:08:14,874 FIRE pid=37cb4710 who=BOT:GlassCannon power=Lance kind=projectile hp=37/50.0
+2026-05-13 12:08:14,907 TARGET pid=6e6ee9be who=BOT:IceTank arch=tank -> BOT:Paladin dist=82 skill=0.73
+2026-05-13 12:08:14,907 TARGET pid=db0408e7 who=BOT:Medic arch=healer -> BOT:Paladin dist=125 skill=0.82
+2026-05-13 12:08:14,907 TARGET pid=c938df29 who=BOT:Bomber arch=ranged -> BOT:Paladin dist=320 skill=0.73
+2026-05-13 12:08:14,907 TARGET pid=824f3530 who=BOT:Sniper arch=ranged -> BOT:Paladin dist=271 skill=0.61
+2026-05-13 12:08:14,907 TARGET pid=c157f2f1 who=BOT:Stunner arch=ranged -> BOT:Paladin dist=386 skill=0.67
+2026-05-13 12:08:14,907 TARGET pid=08758df0 who=BOT:Bruiser arch=tank -> BOT:Paladin dist=55 skill=0.57
+2026-05-13 12:08:14,907 TARGET pid=18efb9b1 who=BOT:Stormcaller arch=ranged -> BOT:Paladin dist=396 skill=0.62
+2026-05-13 12:08:14,907 TARGET pid=37cb4710 who=BOT:GlassCannon arch=ranged -> BOT:Paladin dist=238 skill=0.67
+2026-05-13 12:08:15,080 TARGET pid=6e6ee9be who=BOT:IceTank arch=tank -> BOT:Cleric dist=122 skill=0.73
+2026-05-13 12:08:15,080 TARGET pid=db0408e7 who=BOT:Medic arch=healer -> BOT:Cleric dist=159 skill=0.82
+2026-05-13 12:08:15,080 TARGET pid=c938df29 who=BOT:Bomber arch=ranged -> BOT:Cleric dist=367 skill=0.73
+2026-05-13 12:08:15,080 TARGET pid=824f3530 who=BOT:Sniper arch=ranged -> BOT:Cleric dist=350 skill=0.61
+2026-05-13 12:08:15,081 TARGET pid=c157f2f1 who=BOT:Stunner arch=ranged -> BOT:Cleric dist=413 skill=0.67
+2026-05-13 12:08:15,081 TARGET pid=08758df0 who=BOT:Bruiser arch=tank -> BOT:Cleric dist=116 skill=0.57
+2026-05-13 12:08:15,081 FIRE pid=08758df0 who=BOT:Bruiser power=Hammer kind=melee hp=70/150.0
+2026-05-13 12:08:15,081 TARGET pid=18efb9b1 who=BOT:Stormcaller arch=ranged -> BOT:Cleric dist=447 skill=0.62
+2026-05-13 12:08:15,081 TARGET pid=37cb4710 who=BOT:GlassCannon arch=ranged -> BOT:Cleric dist=327 skill=0.67
+2026-05-13 12:08:15,186 FIRE pid=c938df29 who=BOT:Bomber power=Grenade kind=projectile hp=42/110.0
+2026-05-13 12:08:15,220 TARGET pid=6e6ee9be who=BOT:IceTank arch=tank -> BOT:Paladin dist=63 skill=0.73
+2026-05-13 12:08:15,221 TARGET pid=db0408e7 who=BOT:Medic arch=healer -> BOT:Paladin dist=216 skill=0.82
+2026-05-13 12:08:15,221 TARGET pid=c938df29 who=BOT:Bomber arch=ranged -> BOT:Paladin dist=307 skill=0.73
+2026-05-13 12:08:15,221 TARGET pid=824f3530 who=BOT:Sniper arch=ranged -> BOT:Paladin dist=309 skill=0.61
+2026-05-13 12:08:15,221 TARGET pid=c157f2f1 who=BOT:Stunner arch=ranged -> BOT:Paladin dist=376 skill=0.67
+2026-05-13 12:08:15,221 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:15,221 LOW_HP pid=82aed362 who=BOT:Cleric hp=7%
+2026-05-13 12:08:15,222 FIRE pid=82aed362 who=BOT:Cleric power=Light kind=projectile hp=8/120.0
+2026-05-13 12:08:15,222 TARGET pid=08758df0 who=BOT:Bruiser arch=tank -> BOT:Paladin dist=63 skill=0.57
+2026-05-13 12:08:15,222 TARGET pid=18efb9b1 who=BOT:Stormcaller arch=ranged -> BOT:Paladin dist=373 skill=0.62
+2026-05-13 12:08:15,222 TARGET pid=37cb4710 who=BOT:GlassCannon arch=ranged -> BOT:Paladin dist=247 skill=0.67
+2026-05-13 12:08:15,256 TARGET pid=6e6ee9be who=BOT:IceTank arch=tank -> BOT:Cleric dist=91 skill=0.73
+2026-05-13 12:08:15,256 TARGET pid=db0408e7 who=BOT:Medic arch=healer -> BOT:Cleric dist=200 skill=0.82
+2026-05-13 12:08:15,256 TARGET pid=c938df29 who=BOT:Bomber arch=ranged -> BOT:Cleric dist=349 skill=0.73
+2026-05-13 12:08:15,257 TARGET pid=824f3530 who=BOT:Sniper arch=ranged -> BOT:Cleric dist=361 skill=0.61
+2026-05-13 12:08:15,257 TARGET pid=c157f2f1 who=BOT:Stunner arch=ranged -> BOT:Cleric dist=401 skill=0.67
+2026-05-13 12:08:15,257 TARGET pid=08758df0 who=BOT:Bruiser arch=tank -> BOT:Cleric dist=91 skill=0.57
+2026-05-13 12:08:15,257 TARGET pid=18efb9b1 who=BOT:Stormcaller arch=ranged -> BOT:Cleric dist=412 skill=0.62
+2026-05-13 12:08:15,257 TARGET pid=37cb4710 who=BOT:GlassCannon arch=ranged -> BOT:Cleric dist=296 skill=0.67
+2026-05-13 12:08:15,292 FIRE pid=db0408e7 who=BOT:Medic power=Dart kind=projectile hp=120/120.0
+2026-05-13 12:08:15,326 TARGET pid=6e6ee9be who=BOT:IceTank arch=tank -> BOT:Paladin dist=59 skill=0.73
+2026-05-13 12:08:15,327 TARGET pid=db0408e7 who=BOT:Medic arch=healer -> BOT:Paladin dist=240 skill=0.82
+2026-05-13 12:08:15,327 TARGET pid=c938df29 who=BOT:Bomber arch=ranged -> BOT:Paladin dist=303 skill=0.73
+2026-05-13 12:08:15,327 TARGET pid=824f3530 who=BOT:Sniper arch=ranged -> BOT:Paladin dist=313 skill=0.61
+2026-05-13 12:08:15,327 TARGET pid=c157f2f1 who=BOT:Stunner arch=ranged -> BOT:Paladin dist=378 skill=0.67
+2026-05-13 12:08:15,327 TARGET pid=08758df0 who=BOT:Bruiser arch=tank -> BOT:Paladin dist=63 skill=0.57
+2026-05-13 12:08:15,327 TARGET pid=18efb9b1 who=BOT:Stormcaller arch=ranged -> BOT:Paladin dist=372 skill=0.62
+2026-05-13 12:08:15,327 TARGET pid=37cb4710 who=BOT:GlassCannon arch=ranged -> BOT:Paladin dist=238 skill=0.67
+2026-05-13 12:08:15,396 TARGET pid=6e6ee9be who=BOT:IceTank arch=tank -> BOT:Cleric dist=90 skill=0.73
+2026-05-13 12:08:15,396 TARGET pid=db0408e7 who=BOT:Medic arch=healer -> BOT:Cleric dist=221 skill=0.82
+2026-05-13 12:08:15,396 TARGET pid=c938df29 who=BOT:Bomber arch=ranged -> BOT:Cleric dist=345 skill=0.73
+2026-05-13 12:08:15,396 TARGET pid=824f3530 who=BOT:Sniper arch=ranged -> BOT:Cleric dist=366 skill=0.61
+2026-05-13 12:08:15,397 TARGET pid=c157f2f1 who=BOT:Stunner arch=ranged -> BOT:Cleric dist=402 skill=0.67
+2026-05-13 12:08:15,397 TARGET pid=08758df0 who=BOT:Bruiser arch=tank -> BOT:Cleric dist=90 skill=0.57
+2026-05-13 12:08:15,397 TARGET pid=18efb9b1 who=BOT:Stormcaller arch=ranged -> BOT:Cleric dist=413 skill=0.62
+2026-05-13 12:08:15,397 TARGET pid=37cb4710 who=BOT:GlassCannon arch=ranged -> BOT:Cleric dist=296 skill=0.67
+2026-05-13 12:08:15,466 TARGET pid=6e6ee9be who=BOT:IceTank arch=tank -> BOT:Paladin dist=58 skill=0.73
+2026-05-13 12:08:15,467 TARGET pid=db0408e7 who=BOT:Medic arch=healer -> BOT:Paladin dist=255 skill=0.82
+2026-05-13 12:08:15,467 TARGET pid=c938df29 who=BOT:Bomber arch=ranged -> BOT:Paladin dist=295 skill=0.73
+2026-05-13 12:08:15,467 TARGET pid=824f3530 who=BOT:Sniper arch=ranged -> BOT:Paladin dist=314 skill=0.61
+2026-05-13 12:08:15,467 TARGET pid=c157f2f1 who=BOT:Stunner arch=ranged -> BOT:Paladin dist=380 skill=0.67
+2026-05-13 12:08:15,467 TARGET pid=08758df0 who=BOT:Bruiser arch=tank -> BOT:Paladin dist=82 skill=0.57
+2026-05-13 12:08:15,467 TARGET pid=18efb9b1 who=BOT:Stormcaller arch=ranged -> BOT:Paladin dist=371 skill=0.62
+2026-05-13 12:08:15,467 TARGET pid=37cb4710 who=BOT:GlassCannon arch=ranged -> BOT:Paladin dist=234 skill=0.67
+2026-05-13 12:08:15,500 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=197/220.0
+2026-05-13 12:08:15,534 TARGET pid=6e6ee9be who=BOT:IceTank arch=tank -> BOT:Cleric dist=81 skill=0.73
+2026-05-13 12:08:15,534 TARGET pid=db0408e7 who=BOT:Medic arch=healer -> BOT:Cleric dist=228 skill=0.82
+2026-05-13 12:08:15,534 TARGET pid=c938df29 who=BOT:Bomber arch=ranged -> BOT:Cleric dist=336 skill=0.73
+2026-05-13 12:08:15,534 TARGET pid=824f3530 who=BOT:Sniper arch=ranged -> BOT:Cleric dist=367 skill=0.61
+2026-05-13 12:08:15,534 TARGET pid=c157f2f1 who=BOT:Stunner arch=ranged -> BOT:Cleric dist=395 skill=0.67
+2026-05-13 12:08:15,534 TARGET pid=08758df0 who=BOT:Bruiser arch=tank -> BOT:Cleric dist=95 skill=0.57
+2026-05-13 12:08:15,534 TARGET pid=18efb9b1 who=BOT:Stormcaller arch=ranged -> BOT:Cleric dist=405 skill=0.62
+2026-05-13 12:08:15,534 TARGET pid=37cb4710 who=BOT:GlassCannon arch=ranged -> BOT:Cleric dist=293 skill=0.67
+2026-05-13 12:08:15,602 TARGET pid=6e6ee9be who=BOT:IceTank arch=tank -> BOT:Paladin dist=61 skill=0.73
+2026-05-13 12:08:15,603 TARGET pid=db0408e7 who=BOT:Medic arch=healer -> BOT:Paladin dist=265 skill=0.82
+2026-05-13 12:08:15,603 FIRE pid=18681559 who=BOT:Paladin power=Bastion kind=shield hp=68/180.0
+2026-05-13 12:08:15,603 TARGET pid=c938df29 who=BOT:Bomber arch=ranged -> BOT:Paladin dist=290 skill=0.73
+2026-05-13 12:08:15,603 TARGET pid=824f3530 who=BOT:Sniper arch=ranged -> BOT:Paladin dist=312 skill=0.61
+2026-05-13 12:08:15,603 FUMBLE pid=824f3530 power=Snipe skill=0.61
+2026-05-13 12:08:15,603 FIRE pid=824f3530 who=BOT:Sniper power=Snipe kind=projectile hp=70/70.0
+2026-05-13 12:08:15,603 TARGET pid=c157f2f1 who=BOT:Stunner arch=ranged -> BOT:Paladin dist=381 skill=0.67
+2026-05-13 12:08:15,603 TARGET pid=08758df0 who=BOT:Bruiser arch=tank -> BOT:Paladin dist=95 skill=0.57
+2026-05-13 12:08:15,603 TARGET pid=18efb9b1 who=BOT:Stormcaller arch=ranged -> BOT:Paladin dist=368 skill=0.62
+2026-05-13 12:08:15,603 TARGET pid=37cb4710 who=BOT:GlassCannon arch=ranged -> BOT:Paladin dist=236 skill=0.67
+2026-05-13 12:08:15,637 TARGET pid=6e6ee9be who=BOT:IceTank arch=tank -> BOT:Cleric dist=83 skill=0.73
+2026-05-13 12:08:15,637 FIRE pid=6e6ee9be who=BOT:IceTank power=Cleave kind=melee hp=197/220.0
+2026-05-13 12:08:15,637 KILL pid=6e6ee9be who=BOT:IceTank total_kills=6
+2026-05-13 12:08:15,637 DEATH pid=82aed362 who=BOT:Cleric lives_left=0
+2026-05-13 12:08:15,637 ELIMINATED pid=82aed362 who=BOT:Cleric
+2026-05-13 12:08:15,637 FIRE pid=97a7d522 who=BOT:Cannoneer power=Cannon kind=projectile hp=130/130.0
+2026-05-13 12:08:15,637 RESPAWN pid=97a7d522 who=BOT:Cannoneer lives_left=1
+2026-05-13 12:08:15,671 TARGET pid=6e6ee9be who=BOT:IceTank arch=tank -> BOT:Paladin dist=73 skill=0.73
+2026-05-13 12:08:15,740 FIRE pid=c938df29 who=BOT:Bomber power=Roll Away kind=dash hp=42/110.0
+2026-05-13 12:08:15,740 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:15,809 FIRE pid=18681559 who=BOT:Paladin power=Smite kind=melee hp=68/180.0
+2026-05-13 12:08:15,809 KILL pid=18681559 who=BOT:Paladin total_kills=2
+2026-05-13 12:08:15,843 DEATH pid=7889b34e who=BOT:Ranger lives_left=0
+2026-05-13 12:08:15,844 ELIMINATED pid=7889b34e who=BOT:Ranger
+2026-05-13 12:08:16,084 FIRE pid=18681559 who=BOT:Paladin power=LayOnHands kind=heal hp=118/180.0
+2026-05-13 12:08:16,085 FIRE pid=c157f2f1 who=BOT:Stunner power=Net kind=area hp=100/100.0
+2026-05-13 12:08:16,085 FIRE pid=18efb9b1 who=BOT:Stormcaller power=Storm kind=area hp=33/90.0
+2026-05-13 12:08:16,085 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:Bruiser dist=1350 skill=0.74
+2026-05-13 12:08:16,085 FIRE pid=37cb4710 who=BOT:GlassCannon power=Lance kind=projectile hp=37/50.0
+2026-05-13 12:08:16,120 FIRE pid=db0408e7 who=BOT:Medic power=Dart kind=projectile hp=120/120.0
+2026-05-13 12:08:16,155 FIRE pid=c938df29 who=BOT:Bomber power=Grenade kind=projectile hp=42/110.0
+2026-05-13 12:08:16,190 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=197/220.0
+2026-05-13 12:08:16,225 FIRE pid=db0408e7 who=BOT:Medic power=Regen Pool kind=area hp=120/120.0
+2026-05-13 12:08:16,260 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:16,329 FIRE pid=08758df0 who=BOT:Bruiser power=Hammer kind=melee hp=70/150.0
+2026-05-13 12:08:16,330 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:IceTank dist=1428 skill=0.74
+2026-05-13 12:08:16,433 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:Bruiser dist=1260 skill=0.74
+2026-05-13 12:08:16,734 FIRE pid=6e6ee9be who=BOT:IceTank power=Bulwark kind=shield hp=197/220.0
+2026-05-13 12:08:16,734 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:IceTank dist=1311 skill=0.74
+2026-05-13 12:08:16,768 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:16,801 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:Bruiser dist=1229 skill=0.74
+2026-05-13 12:08:16,869 FIRE pid=6e6ee9be who=BOT:IceTank power=Cleave kind=melee hp=197/220.0
+2026-05-13 12:08:16,972 FIRE pid=824f3530 who=BOT:Sniper power=Reposition kind=dash hp=70/70.0
+2026-05-13 12:08:17,007 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=197/220.0
+2026-05-13 12:08:17,042 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:IceTank dist=1195 skill=0.74
+2026-05-13 12:08:17,111 FIRE pid=c938df29 who=BOT:Bomber power=Grenade kind=projectile hp=54/110.0
+2026-05-13 12:08:17,111 FIRE pid=37cb4710 who=BOT:GlassCannon power=Vanish kind=dash hp=37/50.0
+2026-05-13 12:08:17,180 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:Bruiser dist=1143 skill=0.74
+2026-05-13 12:08:17,283 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:17,386 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:IceTank dist=1070 skill=0.74
+2026-05-13 12:08:17,454 FIRE pid=37cb4710 who=BOT:GlassCannon power=Lance kind=projectile hp=37/50.0
+2026-05-13 12:08:17,557 FIRE pid=08758df0 who=BOT:Bruiser power=Hammer kind=melee hp=70/150.0
+2026-05-13 12:08:17,557 FIRE pid=97a7d522 who=BOT:Cannoneer power=Cannon kind=projectile hp=130/130.0
+2026-05-13 12:08:17,591 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:Bruiser dist=1004 skill=0.74
+2026-05-13 12:08:17,659 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:IceTank dist=971 skill=0.74
+2026-05-13 12:08:17,694 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=197/220.0
+2026-05-13 12:08:17,729 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:Bruiser dist=962 skill=0.74
+2026-05-13 12:08:17,797 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:17,836 FIRE pid=824f3530 who=BOT:Sniper power=Snipe kind=projectile hp=70/70.0
+2026-05-13 12:08:17,836 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:IceTank dist=900 skill=0.74
+2026-05-13 12:08:17,970 FIRE pid=6e6ee9be who=BOT:IceTank power=Cleave kind=melee hp=197/220.0
+2026-05-13 12:08:17,970 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:Bruiser dist=871 skill=0.74
+2026-05-13 12:08:18,070 FUMBLE pid=c938df29 power=Grenade skill=0.73
+2026-05-13 12:08:18,070 FIRE pid=c938df29 who=BOT:Bomber power=Grenade kind=projectile hp=66/110.0
+2026-05-13 12:08:18,105 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:IceTank dist=804 skill=0.74
+2026-05-13 12:08:18,243 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:Bruiser dist=771 skill=0.74
+2026-05-13 12:08:18,312 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:18,312 FIRE pid=18efb9b1 who=BOT:Stormcaller power=Storm kind=area hp=39/90.0
+2026-05-13 12:08:18,347 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:IceTank dist=717 skill=0.74
+2026-05-13 12:08:18,381 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=197/220.0
+2026-05-13 12:08:18,414 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:Bruiser dist=712 skill=0.74
+2026-05-13 12:08:18,482 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:IceTank dist=666 skill=0.74
+2026-05-13 12:08:18,551 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:Bruiser dist=665 skill=0.74
+2026-05-13 12:08:18,589 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:IceTank dist=627 skill=0.74
+2026-05-13 12:08:18,623 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:Bruiser dist=640 skill=0.74
+2026-05-13 12:08:18,657 FIRE pid=db0408e7 who=BOT:Medic power=Mend kind=heal hp=120/120.0
+2026-05-13 12:08:18,658 FIRE pid=37cb4710 who=BOT:GlassCannon power=Lance kind=projectile hp=37/50.0
+2026-05-13 12:08:18,691 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:IceTank dist=588 skill=0.74
+2026-05-13 12:08:18,758 FIRE pid=c938df29 who=BOT:Bomber power=Roll Away kind=dash hp=72/110.0
+2026-05-13 12:08:18,793 FIRE pid=08758df0 who=BOT:Bruiser power=Hammer kind=melee hp=70/150.0
+2026-05-13 12:08:18,793 KILL pid=08758df0 who=BOT:Bruiser total_kills=3
+2026-05-13 12:08:18,828 DEATH pid=18681559 who=BOT:Paladin lives_left=0
+2026-05-13 12:08:18,828 ELIMINATED pid=18681559 who=BOT:Paladin
+2026-05-13 12:08:19,793 TARGET pid=08758df0 who=BOT:Bruiser arch=tank -> BOT:Cannoneer dist=85 skill=0.57
+2026-05-13 12:08:19,793 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:Bruiser dist=85 skill=0.74
+2026-05-13 12:08:19,827 FIRE pid=08758df0 who=BOT:Bruiser power=Wall kind=shield hp=70/150.0
+2026-05-13 12:08:19,896 FIRE pid=97a7d522 who=BOT:Cannoneer power=Cannon kind=projectile hp=130/130.0
+2026-05-13 12:08:20,034 TARGET pid=6e6ee9be who=BOT:IceTank arch=tank -> BOT:Cannoneer dist=99 skill=0.73
+2026-05-13 12:08:20,034 FIRE pid=6e6ee9be who=BOT:IceTank power=Cleave kind=melee hp=197/220.0
+2026-05-13 12:08:20,034 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:IceTank dist=99 skill=0.74
+2026-05-13 12:08:20,169 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=197/220.0
+2026-05-13 12:08:20,847 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=197/220.0
+2026-05-13 12:08:21,260 FIRE pid=6e6ee9be who=BOT:IceTank power=Cleave kind=melee hp=197/220.0
+2026-05-13 12:08:21,533 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=197/220.0
+2026-05-13 12:08:21,735 TARGET pid=c157f2f1 who=BOT:Stunner arch=ranged -> BOT:Cannoneer dist=98 skill=0.67
+2026-05-13 12:08:21,804 FIRE pid=97a7d522 who=BOT:Cannoneer power=Cannon kind=projectile hp=84/130.0
+2026-05-13 12:08:23,232 FIRE pid=db0408e7 who=BOT:Medic power=Regen Pool kind=area hp=120/120.0
+2026-05-13 12:08:24,695 TARGET pid=db0408e7 who=BOT:Medic arch=healer -> BOT:Cannoneer dist=1319 skill=0.82
+2026-05-13 12:08:24,695 STALEMATE pid=c938df29 who=BOT:Bomber forcing aggression
+2026-05-13 12:08:24,695 TARGET pid=c938df29 who=BOT:Bomber arch=ranged -> BOT:Cannoneer dist=1279 skill=0.73
+2026-05-13 12:08:24,695 STALEMATE pid=824f3530 who=BOT:Sniper forcing aggression
+2026-05-13 12:08:24,695 TARGET pid=824f3530 who=BOT:Sniper arch=ranged -> BOT:Cannoneer dist=1094 skill=0.61
+2026-05-13 12:08:24,695 FUMBLE pid=824f3530 power=Snipe skill=0.61
+2026-05-13 12:08:24,695 FUMBLE pid=824f3530 power=Reposition skill=0.61
+2026-05-13 12:08:24,695 FIRE pid=824f3530 who=BOT:Sniper power=Snipe kind=projectile hp=70/70.0
+2026-05-13 12:08:24,695 STALEMATE pid=c157f2f1 who=BOT:Stunner forcing aggression
+2026-05-13 12:08:24,695 STALEMATE pid=18efb9b1 who=BOT:Stormcaller forcing aggression
+2026-05-13 12:08:24,699 TARGET pid=18efb9b1 who=BOT:Stormcaller arch=ranged -> BOT:Cannoneer dist=1176 skill=0.62
+2026-05-13 12:08:24,699 TARGET pid=97a7d522 who=BOT:Cannoneer arch=ranged -> BOT:GlassCannon dist=1742 skill=0.74
+2026-05-13 12:08:24,734 FIRE pid=db0408e7 who=BOT:Medic power=Dart kind=projectile hp=120/120.0
+2026-05-13 12:08:24,767 FIRE pid=c938df29 who=BOT:Bomber power=Grenade kind=projectile hp=96/110.0
+2026-05-13 12:08:24,767 FIRE pid=08758df0 who=BOT:Bruiser power=Hammer kind=melee hp=82/150.0
+2026-05-13 12:08:24,801 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=169/220.0
+2026-05-13 12:08:24,802 FIRE pid=97a7d522 who=BOT:Cannoneer power=Cannon kind=projectile hp=84/130.0
+2026-05-13 12:08:24,836 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:24,837 FIRE pid=18efb9b1 who=BOT:Stormcaller power=Storm kind=area hp=69/90.0
+2026-05-13 12:08:24,870 FIRE pid=db0408e7 who=BOT:Medic power=Mend kind=heal hp=120/120.0
+2026-05-13 12:08:24,870 FIRE pid=824f3530 who=BOT:Sniper power=Reposition kind=dash hp=70/70.0
+2026-05-13 12:08:24,905 FIRE pid=c938df29 who=BOT:Bomber power=Poison Cloud kind=area hp=96/110.0
+2026-05-13 12:08:24,938 FIRE pid=6e6ee9be who=BOT:IceTank power=Cleave kind=melee hp=169/220.0
+2026-05-13 12:08:25,007 FIRE pid=c157f2f1 who=BOT:Stunner power=Net kind=area hp=100/100.0
+2026-05-13 12:08:25,007 FIRE pid=18efb9b1 who=BOT:Stormcaller power=Hail kind=area hp=69/90.0
+2026-05-13 12:08:25,042 FIRE pid=c938df29 who=BOT:Bomber power=Roll Away kind=dash hp=96/110.0
+2026-05-13 12:08:25,076 FIRE pid=6e6ee9be who=BOT:IceTank power=Bulwark kind=shield hp=169/220.0
+2026-05-13 12:08:25,214 STALEMATE pid=6e6ee9be who=BOT:IceTank forcing aggression
+2026-05-13 12:08:25,350 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:25,485 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=169/220.0
+2026-05-13 12:08:25,726 FIRE pid=c938df29 who=BOT:Bomber power=Grenade kind=projectile hp=96/110.0
+2026-05-13 12:08:25,866 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:26,000 FIRE pid=08758df0 who=BOT:Bruiser power=Hammer kind=melee hp=100/150.0
+2026-05-13 12:08:26,168 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=169/220.0
+2026-05-13 12:08:26,202 FIRE pid=08758df0 who=BOT:Bruiser power=Wall kind=shield hp=100/150.0
+2026-05-13 12:08:26,235 FIRE pid=db0408e7 who=BOT:Medic power=Dart kind=projectile hp=120/120.0
+2026-05-13 12:08:26,302 FIRE pid=6e6ee9be who=BOT:IceTank power=Cleave kind=melee hp=169/220.0
+2026-05-13 12:08:26,368 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:26,677 FIRE pid=c938df29 who=BOT:Bomber power=Grenade kind=projectile hp=96/110.0
+2026-05-13 12:08:26,712 FIRE pid=97a7d522 who=BOT:Cannoneer power=Cannon kind=projectile hp=76/130.0
+2026-05-13 12:08:26,850 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=169/220.0
+2026-05-13 12:08:26,884 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:26,919 FIRE pid=db0408e7 who=BOT:Medic power=Dart kind=projectile hp=120/120.0
+2026-05-13 12:08:26,953 FIRE pid=824f3530 who=BOT:Sniper power=Snipe kind=projectile hp=70/70.0
+2026-05-13 12:08:27,021 LOW_HP pid=97a7d522 who=BOT:Cannoneer hp=18%
+2026-05-13 12:08:27,056 FIRE pid=18efb9b1 who=BOT:Stormcaller power=Storm kind=area hp=69/90.0
+2026-05-13 12:08:27,230 FIRE pid=08758df0 who=BOT:Bruiser power=Hammer kind=melee hp=118/150.0
+2026-05-13 12:08:27,401 FIRE pid=c157f2f1 who=BOT:Stunner power=Bolt kind=projectile hp=100/100.0
+2026-05-13 12:08:27,536 FIRE pid=6e6ee9be who=BOT:IceTank power=Cleave kind=melee hp=169/220.0
+2026-05-13 12:08:27,604 FIRE pid=db0408e7 who=BOT:Medic power=Dart kind=projectile hp=120/120.0
+2026-05-13 12:08:27,639 FIRE pid=c938df29 who=BOT:Bomber power=Grenade kind=projectile hp=96/110.0
+2026-05-13 12:08:27,673 FIRE pid=6e6ee9be who=BOT:IceTank power=Frost Bolt kind=projectile hp=169/220.0
+2026-05-13 12:08:27,707 KILL pid=c938df29 who=BOT:Bomber total_kills=3
+2026-05-13 12:08:27,707 DEATH pid=97a7d522 who=BOT:Cannoneer lives_left=0
+2026-05-13 12:08:27,707 ELIMINATED pid=97a7d522 who=BOT:Cannoneer
