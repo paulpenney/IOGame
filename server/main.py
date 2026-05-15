@@ -14,10 +14,21 @@ from typing import Dict
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Header, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from .auth import (
+    AttemptTracker,
+    COOKIE_NAME,
+    COOKIE_MAX_AGE,
+    PasswordGateMiddleware,
+    client_ip,
+    get_password,
+    get_secret,
+    make_cookie_value,
+    ws_is_authed,
+)
 from .balance import build_report
 from .bot_runner import LiveBotSwarm, set_ai_logging, get_ai_logging_status
 from .game_state import GameState
@@ -74,6 +85,8 @@ def create_app(game: GameState | None = None) -> FastAPI:
                 pass
 
     app = FastAPI(title="Classroom IO Game", lifespan=lifespan)
+    app.add_middleware(PasswordGateMiddleware)
+    app.state.attempt_tracker = AttemptTracker()
     app.state.game = game or GameState()
     app.state.connections: Dict[str, WebSocket] = {}
     app.state.spectators: set[WebSocket] = set()
@@ -95,6 +108,55 @@ def create_app(game: GameState | None = None) -> FastAPI:
     @app.get("/")
     async def index() -> FileResponse:
         return FileResponse(STATIC_DIR / "index.html")
+
+    # --- Public auth endpoints (excluded from password gate) -----------
+
+    @app.get("/login")
+    async def login_page() -> FileResponse:
+        return FileResponse(STATIC_DIR / "login.html")
+
+    @app.post("/api/login")
+    async def api_login(payload: dict, request: Request) -> JSONResponse:
+        tracker: AttemptTracker = app.state.attempt_tracker
+        ip = client_ip(request)
+        locked, remaining = tracker.is_locked(ip)
+        if locked:
+            return JSONResponse(
+                {"ok": False, "error": "locked", "lockedSeconds": int(remaining)},
+                status_code=429,
+            )
+        submitted = str(payload.get("password", ""))
+        if secrets.compare_digest(submitted, get_password()):
+            tracker.clear(ip)
+            secret = get_secret(app.state)
+            resp = JSONResponse({"ok": True})
+            resp.set_cookie(
+                COOKIE_NAME,
+                make_cookie_value(secret),
+                max_age=COOKIE_MAX_AGE,
+                httponly=True,
+                samesite="lax",
+                secure=request.url.scheme == "https",
+                path="/",
+            )
+            return resp
+        used, locked_for = tracker.record_failure(ip)
+        remaining_tries = max(0, 5 - used)
+        if locked_for:
+            return JSONResponse(
+                {"ok": False, "error": "locked", "lockedSeconds": int(locked_for)},
+                status_code=429,
+            )
+        return JSONResponse(
+            {"ok": False, "error": "wrong", "attemptsRemaining": remaining_tries},
+            status_code=401,
+        )
+
+    @app.post("/api/logout")
+    async def api_logout() -> JSONResponse:
+        resp = JSONResponse({"ok": True})
+        resp.delete_cookie(COOKIE_NAME, path="/")
+        return resp
 
     @app.get("/teacher")
     async def teacher_page() -> FileResponse:
@@ -337,6 +399,9 @@ def create_app(game: GameState | None = None) -> FastAPI:
 
     @app.websocket("/ws")
     async def ws(websocket: WebSocket) -> None:
+        if not ws_is_authed(websocket, get_secret(app.state)):
+            await websocket.close(code=4401)
+            return
         await websocket.accept()
         pid: str | None = None
         game: GameState = app.state.game
@@ -447,6 +512,9 @@ def create_app(game: GameState | None = None) -> FastAPI:
         S2C_EVENT broadcasts as players. Sends a single welcome with world
         dimensions on connect.
         """
+        if not ws_is_authed(websocket, get_secret(app.state)):
+            await websocket.close(code=4401)
+            return
         await websocket.accept()
         game: GameState = app.state.game
         try:
@@ -532,10 +600,11 @@ app = create_app()
 def main() -> None:
     import uvicorn
 
+    port = int(os.environ.get("PORT", "8000"))
     uvicorn.run(
         "server.main:app",
         host="0.0.0.0",
-        port=8000,
+        port=port,
         log_level="info",
         reload=False,
     )
