@@ -110,10 +110,16 @@ def is_public_path(path: str) -> bool:
     return any(path == p or path.startswith(p) for p in PUBLIC_PATH_PREFIXES)
 
 
+def _gate_disabled() -> bool:
+    return os.environ.get("SITE_PASSWORD_DISABLED") == "1"
+
+
 class PasswordGateMiddleware(BaseHTTPMiddleware):
     """Redirect unauthenticated HTTP requests to /login."""
 
     async def dispatch(self, request: Request, call_next):
+        if _gate_disabled():
+            return await call_next(request)
         path = request.url.path
         if is_public_path(path):
             return await call_next(request)
@@ -138,5 +144,7 @@ def client_ip(request: Request) -> str:
 
 
 def ws_is_authed(websocket, secret: str) -> bool:
+    if _gate_disabled():
+        return True
     cookie = websocket.cookies.get(COOKIE_NAME)
     return verify_cookie(secret, cookie)
