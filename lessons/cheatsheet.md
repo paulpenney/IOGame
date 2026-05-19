@@ -4,15 +4,23 @@
 
 ```python
 def build_character():
+    # 1. Define each power as a variable.
+    punch = {
+        "name": "Punch",
+        "key": "space",
+        "cooldownMs": 600,
+        "cast": { ... },        # one of the six kinds below
+    }
+    # heal = { ... }            # add as many as you want (max 4)
+
+    # 2. Return the character dict and list your powers.
     return {
         "characterName": "...",  # 1 to 24 letters
         "color": "...",          # see colors below
         "size": 24,              # 12 to 60 (smaller = costs more)
         "speed": 220,            # 80 to 400
         "maxHealth": 100,        # 40 to 300
-        "powers": [              # 1 to 4 powers
-            { ... },
-        ],
+        "powers": [punch],       # 1 to 4 powers, e.g. [punch, heal]
     }
 ```
 

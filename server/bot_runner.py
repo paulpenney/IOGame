@@ -834,9 +834,14 @@ class LiveBotSwarm:
         if count is None:
             specs = list(BOT_MANIFESTS)
         else:
-            count = max(1, min(int(count), 40))
+            count = max(1, min(int(count), 50))
             specs = [BOT_MANIFESTS[i % len(BOT_MANIFESTS)] for i in range(count)]
-        for spec in specs:
+        # Slow bots by 30% globally so they're easier for students to handle.
+        BOT_SPEED_MULT = 0.7
+        for original in specs:
+            spec = dict(original)
+            if "speed" in spec:
+                spec["speed"] = max(20, int(round(spec["speed"] * BOT_SPEED_MULT)))
             manifest = CharacterManifest.model_validate(spec)
             p = self.game.add_player(self.BOT_PREFIX + spec["characterName"], manifest)
             self._pids.append(p.pid)

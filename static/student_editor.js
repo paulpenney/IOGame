@@ -7,7 +7,7 @@
   const outEl = document.getElementById('output');
   const runBtn = document.getElementById('runBtn');
   const joinBtn = document.getElementById('joinBtn');
-  const exampleSel = document.getElementById('example');
+  // (example selector removed — students start from the boilerplate template.)
   const usernameEl = document.getElementById('username');
 
   let validatedManifest = null;
@@ -252,17 +252,6 @@ ${lines}
     outEl.textContent = 'Loaded ' + which + '. Click "Run & Validate".';
     joinBtn.disabled = true;
     validatedManifest = null;
-  }
-
-  exampleSel.addEventListener('change', () => loadExample(exampleSel.value));
-  const loadExBtn = document.getElementById('loadExampleBtn');
-  if (loadExBtn) {
-    loadExBtn.addEventListener('click', () => {
-      if (codeEl.value.trim() && !confirm('Replace your code with the selected example?')) return;
-      loadExample(exampleSel.value).catch(err => {
-        outEl.textContent = 'Could not load example: ' + err.message;
-      });
-    });
   }
 
   const resetBtn = document.getElementById('resetBtn');

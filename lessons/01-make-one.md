@@ -16,26 +16,27 @@
 
 ```python
 def build_character():
+    # Define each power as its own variable, then list them in "powers".
+    punch = {
+        "name": "Punch",
+        "key": "space",
+        "cooldownMs": 600,
+        "cast": {
+            "kind": "melee",
+            "color": "blue",
+            "range": 40,
+            "arcDeg": 70,
+            "onHit": [{"effect": "damage", "amount": 12}],
+        },
+    }
+
     return {
         "characterName": "Rookie",
         "color": "blue",
         "size": 24,
         "speed": 220,
         "maxHealth": 100,
-        "powers": [
-            {
-                "name": "Punch",
-                "key": "space",
-                "cooldownMs": 600,
-                "cast": {
-                    "kind": "melee",
-                    "color": "blue",
-                    "range": 40,
-                    "arcDeg": 70,
-                    "onHit": [{"effect": "damage", "amount": 12}],
-                },
-            },
-        ],
+        "powers": [punch],
     }
 ```
 

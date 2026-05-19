@@ -20,18 +20,27 @@ Copy this and replace the **CAPS** with your choices:
 
 ```python
 def build_character():
+    # Define each power as its own variable first.
+    punch = {
+        "name": "Punch",
+        "key": "space",
+        "cooldownMs": 600,
+        "cast": {
+            "kind": "melee", "color": "blue",
+            "range": 40, "arcDeg": 70,
+            "onHit": [{"effect": "damage", "amount": 12}],
+        },
+    }
+    # power2 = { ... }   # copy one from Lesson 2
+    # power3 = { ... }   # optional
+
     return {
         "characterName": "YOUR NAME HERE",
         "color": "YOUR COLOR HERE",
         "size": 24,            # smaller = harder to hit, costs more
         "speed": 220,          # 80 to 400
         "maxHealth": 100,      # 40 to 300
-        "powers": [
-            # power 1 - space
-            # power 2 - e
-            # power 3 - q  (optional)
-            # power 4 - f  (optional)
-        ],
+        "powers": [punch],     # add your other variables here: [punch, power2]
     }
 ```
 
