@@ -365,6 +365,8 @@ class JoinRequest(BaseModel):
             raise ValueError("username cannot be blank")
         if not all(ch.isalnum() or ch in "-_ " for ch in v):
             raise ValueError("username may only use letters, digits, space, - or _")
+        from server.name_filter import check_name
+        check_name(v)
         return v
 
 
