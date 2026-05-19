@@ -51,6 +51,7 @@ ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = ROOT / "static"
 EXAMPLES_DIR = ROOT / "examples"
 BOILERPLATE_DIR = ROOT / "student_boilerplate"
+LESSONS_DIR = ROOT / "lessons"
 
 TICK_RATE = 30  # Hz
 TICK_DT = 1.0 / TICK_RATE
@@ -177,6 +178,25 @@ def create_app(game: GameState | None = None) -> FastAPI:
     @app.get("/challenges")
     async def challenges_page() -> FileResponse:
         return FileResponse(STATIC_DIR / "challenges.html")
+
+    @app.get("/lessons")
+    @app.get("/lessons/")
+    async def lessons_index() -> FileResponse:
+        # Serve the index as raw markdown wrapped in a tiny HTML viewer.
+        return FileResponse(STATIC_DIR / "lessons.html")
+
+    @app.get("/lessons/{name}")
+    async def lesson_file(name: str):
+        # Only allow plain .md filenames inside the lessons folder.
+        from fastapi import HTTPException
+        if "/" in name or "\\" in name or ".." in name:
+            raise HTTPException(status_code=400, detail="bad name")
+        if not name.endswith(".md"):
+            raise HTTPException(status_code=404, detail="not found")
+        path = LESSONS_DIR / name
+        if not path.is_file():
+            raise HTTPException(status_code=404, detail="not found")
+        return FileResponse(path, media_type="text/markdown; charset=utf-8")
 
     @app.get("/spectator")
     async def spectator_page() -> FileResponse:

@@ -370,6 +370,15 @@ _NAMED_COLORS = {
     "red", "orange", "yellow", "green", "blue", "purple", "pink", "white",
     "black", "gray", "grey", "cyan", "magenta", "brown", "lime", "teal",
     "gold", "silver", "navy", "maroon",
+    # extras students reach for — all standard CSS names
+    "crimson", "salmon", "tomato", "coral", "darkred",
+    "darkorange", "khaki", "olive", "darkgreen", "forestgreen",
+    "seagreen", "turquoise", "aqua", "deepskyblue", "skyblue",
+    "dodgerblue", "royalblue", "darkblue", "indigo", "violet",
+    "plum", "orchid", "hotpink", "deeppink", "fuchsia",
+    "tan", "chocolate", "sienna", "beige", "ivory",
+    "wheat", "lavender", "mintcream", "snow", "darkgray", "darkgrey",
+    "lightgray", "lightgrey", "slategray", "slategrey",
 }
 
 
