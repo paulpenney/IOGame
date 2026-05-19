@@ -18,7 +18,15 @@ The framework teaches:
 
 ## What the host does
 
-1. From this folder run:
+1. **Open a terminal in VS Code.**
+
+   In the menu bar: **Terminal → New Terminal** (shortcut: ``Ctrl+` `` /
+   ``⌃+` ``). A panel will open at the bottom of the window. All
+   the commands below get typed into that panel and run by pressing
+   **Enter**. The terminal's current folder should already be this
+   project folder.
+
+2. From this folder run:
 
    ```bash
    pip install -r requirements.txt

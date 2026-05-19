@@ -9,6 +9,7 @@ go play with it.
 2. [Lesson 2 — Add a power](02-add-a-power.md) *(10 min)*
 3. [Lesson 3 — Stay under 100 points](03-budget.md) *(10 min)*
 4. [Lesson 4 — Build your own from scratch](04-your-own.md) *(20+ min)*
+5. [Lesson 5 — Draw your own character](05-your-own-drawing.md) *(15 min)*
 
 Then keep this open while you play:
 
