@@ -124,15 +124,6 @@ def test_warning_on_perma_stun():
     assert any("perma-stun" in w for w in r["warnings"])
 
 
-def test_examples_fit_budget():
-    import json, glob
-    for path in sorted(glob.glob("examples/*/manifest.json")):
-        with open(path) as f:
-            m = CharacterManifest.model_validate(json.load(f))
-        r = build_report(m)
-        assert r["ok"], f"{path} over budget: {r['total']} (warnings={r['warnings']})"
-
-
 def test_metrics_present():
     m = base_manifest()
     r = build_report(m)

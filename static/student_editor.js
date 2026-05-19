@@ -1,13 +1,12 @@
-// Student editor: load boilerplate/example, run student JS in a sandboxed
-// iframe, validate the resulting manifest with the server, then store the
-// session and jump to the arena.
+// Student editor: run Python in Pyodide, validate the resulting manifest
+// with the server, then store the session and jump to the arena.
 
 (function () {
   const codeEl = document.getElementById('code');
   const outEl = document.getElementById('output');
   const runBtn = document.getElementById('runBtn');
   const joinBtn = document.getElementById('joinBtn');
-  // (example selector removed — students start from the boilerplate template.)
+  // (Students start from a blank editor and write build_character() themselves.)
   const usernameEl = document.getElementById('username');
 
   let validatedManifest = null;
@@ -21,8 +20,8 @@
       if (p.username) usernameEl.value = p.username;
     } catch (e) { /* ignore */ }
   }
-  // Detect old JavaScript code from previous sessions and clear it so we
-  // load the fresh Python boilerplate.
+  // Detect old JavaScript code from previous sessions and clear it so the
+  // editor starts blank.
   function looksLikeJs(src) {
     return /\bfunction\s+buildCharacter\s*\(/.test(src)
         || /\bvar\s+\w+\s*=/.test(src)
@@ -242,25 +241,15 @@ ${lines}
     return await r.text();
   }
 
-  async function loadExample(which) {
-    let url;
-    if (which === 'boilerplate') url = '/api/boilerplate/character.py';
-    else url = '/api/example/' + encodeURIComponent(which) + '/character.py';
-    const text = await loadFile(url);
-    codeEl.value = text;
-    persist();
-    outEl.textContent = 'Loaded ' + which + '. Click "Run & Validate".';
-    joinBtn.disabled = true;
-    validatedManifest = null;
-  }
-
   const resetBtn = document.getElementById('resetBtn');
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
-      if (codeEl.value.trim() && !confirm('Replace your code with the Medic boilerplate?')) return;
-      loadExample('boilerplate').catch(err => {
-        outEl.textContent = 'Could not load boilerplate: ' + err.message;
-      });
+      if (codeEl.value.trim() && !confirm('Clear the editor?')) return;
+      codeEl.value = '';
+      persist();
+      outEl.textContent = 'Editor cleared. Write your build_character() function and click "Run & Validate".';
+      joinBtn.disabled = true;
+      validatedManifest = null;
     });
   }
 
@@ -284,11 +273,9 @@ ${lines}
     });
   }
 
-  // Initial load: if no saved code, fetch the boilerplate.
+  // Initial state: blank editor. Show a hint in the status area.
   if (!codeEl.value.trim()) {
-    loadExample('boilerplate').catch(err => {
-      outEl.textContent = 'Could not load boilerplate: ' + err.message;
-    });
+    outEl.textContent = 'Write a build_character() function, then click "Run & Validate".';
   }
 
   // Run the student's Python in Pyodide. Pyodide runs entirely in the

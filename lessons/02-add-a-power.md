@@ -45,8 +45,8 @@ Each power must use a **different key** (no two on `space`, etc.).
 ## Pick from the menu
 
 Pick **one** of these. Copy the variable, then add it to your
-`"powers"` list. (More power ideas live in the
-[cheatsheet](cheatsheet.md) once you're ready for them.)
+`"powers"` list. (More power ideas are documented in the **Manual**
+link in the game's top bar once you're ready for them.)
 
 ### Attack — Fireball (long-range hit)
 

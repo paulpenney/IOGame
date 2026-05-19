@@ -11,9 +11,8 @@ go play with it.
 4. [Lesson 4 — Build your own from scratch](04-your-own.md) *(20+ min)*
 5. [Lesson 5 — Draw your own character](05-your-own-drawing.md) *(15 min)*
 
-Then keep this open while you play:
-
-- [Cheatsheet — every field, on one page](cheatsheet.md)
+Need a quick reminder of every field? Open the **Manual** link in the
+game's top bar.
 
 ## How it works
 

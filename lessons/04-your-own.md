@@ -85,7 +85,7 @@ When you're bored of your character, try one of these:
 
 ## You're done!
 
-Keep the [Cheatsheet](cheatsheet.md) open while you play. It has every
-field and every legal value.
+Open the **Manual** link in the game's top bar for the full list of
+fields and legal values.
 
 Have fun!

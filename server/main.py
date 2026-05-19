@@ -49,8 +49,6 @@ from .validation import validate_join, validate_manifest
 
 ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = ROOT / "static"
-EXAMPLES_DIR = ROOT / "examples"
-BOILERPLATE_DIR = ROOT / "student_boilerplate"
 LESSONS_DIR = ROOT / "lessons"
 
 TICK_RATE = 30  # Hz
@@ -409,24 +407,15 @@ def create_app(game: GameState | None = None) -> FastAPI:
         return {"ok": True, "approved": True, "pid": player.pid}
 
     @app.get("/api/boilerplate/{name}")
-    async def boilerplate(name: str) -> FileResponse:
-        # Only allow specific known files; never join arbitrary paths.
-        allowed = {"character.html", "character.css", "character.js",
-                   "character.py",
-                   "manifest.example.json", "README.md"}
-        if name not in allowed:
-            return JSONResponse({"error": "not found"}, status_code=404)
-        return FileResponse(BOILERPLATE_DIR / name)
+    async def boilerplate(name: str):
+        # Boilerplate removed; editor starts blank.
+        return JSONResponse({"error": "not found"}, status_code=404)
 
     @app.get("/api/example/{slug}/{name}")
-    async def example_file(slug: str, name: str) -> FileResponse:
-        allowed_slugs = {"fire_wizard", "ice_tank", "medic", "rogue",
-                         "paladin", "bomber"}
-        allowed_names = {"character.html", "character.css", "character.js",
-                         "character.py", "manifest.json"}
-        if slug not in allowed_slugs or name not in allowed_names:
-            return JSONResponse({"error": "not found"}, status_code=404)
-        return FileResponse(EXAMPLES_DIR / slug / name)
+    async def example_file(slug: str, name: str):
+        # Example characters removed from the public API; students build
+        # their own from scratch.
+        return JSONResponse({"error": "not found"}, status_code=404)
 
     # Static files (CSS/JS for the frontend).
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")

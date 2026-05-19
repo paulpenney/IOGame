@@ -88,8 +88,6 @@ Fire power: `Space` (or whatever key the power defines).
 classroom-io-game/
   server/                Python server (FastAPI + WebSockets)
   static/                Frontend pages and JS (no build step)
-  student_boilerplate/   Starter character files for students
-  examples/              Two finished example characters
   tests/                 Pytest unit + integration tests
   scripts/               Helper scripts (LAN IP, smoke test)
 ```
