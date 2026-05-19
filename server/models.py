@@ -309,6 +309,12 @@ class CharacterManifest(BaseModel):
     _vsp = field_validator("speed")(_ranged("speed", *SPEED_RANGE))
     _vhp = field_validator("maxHealth")(_ranged("maxHealth", *MAX_HEALTH_RANGE))
 
+    @field_validator("characterName")
+    @classmethod
+    def _vname(cls, v: str) -> str:
+        from server.name_filter import check_name
+        return check_name(v.strip())
+
     @field_validator("color")
     @classmethod
     def _vcl(cls, v: str) -> str:
