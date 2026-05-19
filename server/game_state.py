@@ -43,11 +43,14 @@ SPEED_MULT_GLOBAL = 1.20
 
 # Universal skill moves (free for every character, not in their build budget).
 STAMINA_MAX = 100.0
-STAMINA_REGEN = 32.0     # per second
+# Regen: full bar in ~7 seconds.
+STAMINA_REGEN = STAMINA_MAX / 7.0
 SPRINT_DRAIN = 30.0      # per second while sprinting
 SPRINT_MIN_TO_START = 20 # can't start sprint below this
 SPRINT_SPEED_MULT = 1.55
-ROLL_COST = 35.0
+# Dodge-roll: consumes the entire stamina bar, and can only be triggered
+# when stamina is full again (so ~7s between rolls).
+ROLL_COST = STAMINA_MAX
 ROLL_DISTANCE = 130.0     # px instant
 ROLL_IFRAMES_MS = 280
 ROLL_COOLDOWN_S = 0.55
@@ -344,9 +347,10 @@ class GameState:
             return False
         if now < p.roll_ready_at:
             return False
-        if p.stamina < ROLL_COST:
+        # Roll requires a FULL stamina bar.
+        if p.stamina < STAMINA_MAX - 0.01:
             return False
-        p.stamina -= ROLL_COST
+        p.stamina = 0.0
         p.roll_ready_at = now + ROLL_COOLDOWN_S
         # Roll in movement direction if any, else aim direction.
         mx, my = self._inputs.get(pid, (0.0, 0.0))

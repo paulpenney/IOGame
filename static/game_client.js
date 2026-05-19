@@ -23,6 +23,9 @@
   // Floating damage numbers and particle effects.
   const floaters = [];   // { x, y, text, color, born, ttl, vy }
   const ripples = [];    // { x, y, color, born, ttl, r0, r1 }
+  // Smooth client-side dodge-roll animation (server actually teleports).
+  // pid -> { sx, sy, ex, ey, t0, dur }
+  const rollAnim = Object.create(null);
   // Health-tracking for hit-flash effect (no need to rely on events).
   const lastHealth = Object.create(null);
   const flashes = Object.create(null);   // pid -> until-timestamp
@@ -284,6 +287,23 @@
     mouse.x = ev.clientX - rect.left;
     mouse.y = ev.clientY - rect.top;
     mouse.ready = true;
+  });
+
+  // Map mouse buttons to power-keys "mouse1" / "mouse2" / "mouse3" so
+  // students can bind powers to clicks (e.g. "key": "mouse1").
+  const MOUSE_KEY_BY_BUTTON = { 0: 'mouse1', 2: 'mouse2', 1: 'mouse3' };
+  canvas.addEventListener('contextmenu', (ev) => ev.preventDefault());
+  canvas.addEventListener('mousedown', (ev) => {
+    const k = MOUSE_KEY_BY_BUTTON[ev.button];
+    if (!k) return;
+    if (!powerKeysForMe().includes(k)) return;
+    ev.preventDefault();
+    if (iAmEliminated()) return;
+    if (!ws || ws.readyState !== 1) return;
+    ws.send(JSON.stringify({ type: 'fire', payload: { key: k } }));
+    flashHotbarSlot(k);
+    const a = (playerAnim[myPid] = playerAnim[myPid] || {state:'idle',frame:0,lastT:0,lastDx:0,lastDy:0});
+    a.attackUntil = performance.now() + 260;
   });
 
   function normalizeKey(ev) {
@@ -670,7 +690,21 @@
       // Hide dead and eliminated players entirely.
       if (!p.alive || p.eliminated) continue;
       const r = (p.size / 2) * RENDER_SCALE;
-      const px = ox + p.x, py = oy + p.y;
+      // Smooth roll animation: visually interpolate from pre-roll pos
+      // to the (already-applied) server destination over ~240ms.
+      let drawX = p.x, drawY = p.y;
+      const ra = rollAnim[p.pid];
+      if (ra) {
+        const t = (now - ra.t0) / ra.dur;
+        if (t >= 1) {
+          delete rollAnim[p.pid];
+        } else {
+          const k = 1 - Math.pow(1 - t, 3); // ease-out cubic
+          drawX = ra.sx + (ra.ex - ra.sx) * k;
+          drawY = ra.sy + (ra.ey - ra.sy) * k;
+        }
+      }
+      const px = ox + drawX, py = oy + drawY;
       ctx.globalAlpha = 1;
 
       // Shadow disc on the floor.
@@ -1035,11 +1069,30 @@
       SFX.capture();
     } else if (e.kind === 'roll') {
       const p = playersById[e.pid];
-      if (p) ripples.push({
-        x: p.x, y: p.y, color: p.color,
-        born: performance.now(), ttl: 350,
-        r0: p.size / 2, r1: p.size,
-      });
+      const anim = playerAnim[e.pid];
+      const sx = (anim && anim.lastX != null) ? anim.lastX : (p ? p.x : 0);
+      const sy = (anim && anim.lastY != null) ? anim.lastY : (p ? p.y : 0);
+      const ex = p ? p.x : sx;
+      const ey = p ? p.y : sy;
+      rollAnim[e.pid] = { sx, sy, ex, ey, t0: performance.now(), dur: 240 };
+      if (p) {
+        // Trail of small ripples along the roll path.
+        for (let i = 1; i <= 3; i++) {
+          ripples.push({
+            x: sx + (ex - sx) * (i / 4),
+            y: sy + (ey - sy) * (i / 4),
+            color: p.color,
+            born: performance.now() + i * 30,
+            ttl: 320,
+            r0: p.size / 3, r1: p.size * 0.8,
+          });
+        }
+        ripples.push({
+          x: ex, y: ey, color: p.color,
+          born: performance.now(), ttl: 380,
+          r0: p.size / 2, r1: p.size * 1.05,
+        });
+      }
     } else if (e.kind === 'fire') {
       // Universal cast telegraph: a colored ring at the caster's feet so
       // every power has SOME visible feedback, even non-projectile ones
@@ -1287,10 +1340,14 @@
 
   function drawLeaderboard() {
     let lb = document.getElementById('inGameLb');
+    // Position just below the minimap (which sits at top:12 + height).
+    const mw = 160;
+    const mh = Math.round(mw * (world.height / world.width));
+    const topPx = 12 + mh + 14;
     if (!lb) {
       lb = document.createElement('div');
       lb.id = 'inGameLb';
-      lb.style.cssText = 'position:absolute;top:48px;right:10px;min-width:170px;'
+      lb.style.cssText = 'position:absolute;right:10px;min-width:170px;'
         + 'background:rgba(12,14,22,0.72);border:1px solid rgba(255,255,255,0.08);'
         + 'border-radius:8px;padding:8px 10px;font:12px system-ui,sans-serif;'
         + 'color:#e7e9f3;pointer-events:none;z-index:5;';
@@ -1298,6 +1355,7 @@
       if (getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
       wrap.appendChild(lb);
     }
+    lb.style.top = topPx + 'px';
     const ps = (snapshot.players || [])
       .filter(p => !p.eliminated)
       .slice()

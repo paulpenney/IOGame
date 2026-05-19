@@ -16,20 +16,40 @@ The framework teaches:
 - functions
 - event handling
 
-## What the teacher does
+## What the host does
 
-1. Install Python 3.11+.
-2. From this folder run:
+1. From this folder run:
 
    ```bash
    pip install -r requirements.txt
    python -m server.main
    ```
 
+   If `pip install` fails due to environment conflicts or package installation issues, use a local virtual environment instead:
+
+   ```bash
+   python3.13 -m venv .venv
+   source .venv/bin/activate
+   python --version
+   python -m pip install --upgrade pip setuptools wheel
+   python -m pip install -r requirements.txt
+   python -m server.main
+   ```
+
+   If you are using Python 3.14, install may fail because `pydantic-core` is not yet compatible with that interpreter. In that case, use Python 3.13 or earlier.
+
+   If `pip install` fails with proxy or network errors such as a tunnel connection failure or 403 response, your machine does not currently have direct access to PyPI. In that case:
+
+   - ensure `HTTP_PROXY` / `HTTPS_PROXY` are configured correctly for your network, or
+   - use a different network with internet access, or
+   - download the dependency wheels on a machine with internet access and install them locally.
+
+   Without the dependencies installed, the server will fail with errors such as `ModuleNotFoundError: No module named 'fastapi'`.
+
    The server listens on `0.0.0.0:8000` so other devices on the same LAN can
    connect.
 
-3. Find your LAN IP. Easiest way:
+2. Find your LAN IP. Easiest way:
 
    ```bash
    python scripts/print_lan_ip.py
@@ -37,9 +57,9 @@ The framework teaches:
 
    It prints something like `http://192.168.1.42:8000`.
 
-4. Share that URL with the class.
+3. Share that URL with the class.
 
-## What the students do
+## What the players do
 
 Students just open the URL in their browser. They never need to clone the repo.
 
@@ -64,23 +84,6 @@ classroom-io-game/
   examples/              Two finished example characters
   tests/                 Pytest unit + integration tests
   scripts/               Helper scripts (LAN IP, smoke test)
-```
-
-## Running tests
-
-```bash
-pip install -r requirements.txt
-pytest -q
-```
-
-## Running the smoke test
-
-The smoke test boots the server, connects multiple fake students over
-WebSockets, uploads manifests, sends movement and combat, and verifies that the
-world state is broadcast.
-
-```bash
-python scripts/smoke_test.py
 ```
 
 ## Security note

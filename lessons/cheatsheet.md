@@ -21,7 +21,7 @@ def build_character():
 ```python
 {
     "name": "...",          # whatever you want
-    "key": "space",         # "space" | "e" | "q" | "f"
+    "key": "space",         # "space" | "e" | "q" | "f" | "mouse1" | "mouse2"
     "cooldownMs": 1000,     # 200 to 20000 (shorter = costs more!)
     "cast": { ... },        # one of the six kinds below
 }
@@ -110,7 +110,10 @@ Or a hex code like `"#ff8800"`.
 
 - **WASD** or arrows — move
 - **Mouse** — aim
-- **Space / E / Q / F** — your powers
+- **Space / E / Q / F** — your powers (whichever keys you chose)
+- **Left/Right mouse click** — your powers if you bound them to `"mouse1"` / `"mouse2"`
+- **Shift** — sprint (drains stamina)
+- **C** — dodge roll (uses your FULL stamina bar — takes ~7s to refill)
 
 ## Python rules
 

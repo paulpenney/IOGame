@@ -12,6 +12,10 @@ Your character can have up to **4 powers**, one for each key:
 - `e`
 - `q`
 - `f`
+- `mouse1` (left click)
+- `mouse2` (right click)
+
+Pick whichever you like — each power needs its own key, no duplicates.
 
 ## How to add one
 
