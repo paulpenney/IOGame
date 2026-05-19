@@ -10,6 +10,10 @@
 
 ## Step 2 — Delete it all, then paste this
 
+> **Important:** copy the **whole block below**, including the first
+> line `def build_character():`. If you miss it, Python will say
+> *"return outside function"*.
+
 ```python
 def build_character():
     return {

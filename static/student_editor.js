@@ -348,10 +348,32 @@ ${lines}
 
   async function runInPyodide(code) {
     const py = await loadPyodideOnce();
+    // Friendly pre-check: most common student mistake is pasting only the
+    // `return { ... }` block without the `def build_character():` wrapper.
+    if (!/\bdef\s+build_character\s*\(/.test(code)) {
+      throw new Error(
+        'Your code is missing the first line. It must start with:\n' +
+        '    def build_character():\n' +
+        'Everything else should be indented inside that function.'
+      );
+    }
     // Fresh namespace each run.
     const ns = py.toPy({});
     try {
-      await py.runPythonAsync(code, { globals: ns });
+      try {
+        await py.runPythonAsync(code, { globals: ns });
+      } catch (e) {
+        const msg = (e && e.message) ? e.message : String(e);
+        if (/'return' outside function/.test(msg)) {
+          throw new Error(
+            "Python says: 'return' outside function.\n" +
+            "Your `return { ... }` block needs to be INSIDE `def build_character():`.\n" +
+            "Make sure the very first line of your code is:  def build_character():\n" +
+            "and everything below it is indented (4 spaces)."
+          );
+        }
+        throw e;
+      }
       const builder = ns.get('build_character');
       if (!builder) {
         throw new Error('You must define a function called build_character().');
