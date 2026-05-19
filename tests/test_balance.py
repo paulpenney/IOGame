@@ -70,7 +70,7 @@ def test_short_cooldown_makes_a_power_more_expensive():
 
 
 def test_cooldown_factor_is_clamped():
-    assert cooldown_factor(50) == 4.0    # ridiculously short
+    assert cooldown_factor(50) == 6.0    # ridiculously short
     assert cooldown_factor(50_000) == 0.4  # ridiculously long
 
 
@@ -78,12 +78,12 @@ def test_overpowered_character_is_rejected():
     """Max stats + 4 spammy 60-damage powers should fail validation."""
     overpowered = {
         "characterName": "GodMode", "color": "red",
-        "size": 8, "speed": 400, "maxHealth": 300,
+        "size": 12, "speed": 400, "maxHealth": 300,
         "powers": [
             {"name": f"P{i}", "key": k, "cooldownMs": 200,
              "cast": {
                  "kind": "projectile", "color": "red",
-                 "speed": 900, "radius": 30, "lifetimeMs": 5000,
+                 "speed": 700, "radius": 30, "lifetimeMs": 5000,
                  "count": 6, "spreadDeg": 60, "pierce": True,
                  "onHit": [{"effect": "damage", "amount": 60}],
              }}

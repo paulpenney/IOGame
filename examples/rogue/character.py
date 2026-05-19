@@ -18,15 +18,15 @@ def build_character():
     backstab = {
         "name": "Backstab",
         "key": "space",
-        "cooldownMs": 600,
+        "cooldownMs": 700,
         "cast": {
             "kind": "melee",
             "color": "yellow",
-            "range": 40,
-            "arcDeg": 70,
+            "range": 90,
+            "arcDeg": 80,
             "onHit": [
-                {"effect": "damage", "amount": 28},
-                {"effect": "stun", "durationMs": 250},
+                {"effect": "damage", "amount": 22},
+                {"effect": "stun", "durationMs": 200},
             ],
         },
     }

@@ -285,9 +285,25 @@ def create_app(game: GameState | None = None) -> FastAPI:
         swarm: LiveBotSwarm = app.state.bot_swarm
         if swarm.running:
             return {"ok": True, "running": True, "count": swarm.count, "alreadyRunning": True}
-        spawned = swarm.spawn()
+        count = payload.get("count")
+        try:
+            count = int(count) if count is not None else None
+        except (TypeError, ValueError):
+            count = None
+        # Resolve hunt target by username (case-insensitive) if provided.
+        hunt_username = (payload.get("huntUsername") or "").strip().lower()
+        hunt_pid = (payload.get("huntPid") or "").strip()
+        game = app.state.game
+        if hunt_username and not hunt_pid:
+            for pl in game.players.values():
+                if pl.username.lower() == hunt_username:
+                    hunt_pid = pl.pid
+                    break
+        game.bot_hunt_pid = hunt_pid or ""
+        spawned = swarm.spawn(count)
         swarm.start()
-        return {"ok": True, "running": True, "count": spawned}
+        return {"ok": True, "running": True, "count": spawned,
+                "huntPid": game.bot_hunt_pid}
 
     @app.post("/api/teacher/stop_bots")
     async def teacher_stop_bots(payload: dict, x_teacher_token: str | None = Header(default=None)):

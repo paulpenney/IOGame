@@ -602,19 +602,40 @@
     ctx.globalAlpha = 1;
   }
 
+  const _meleeFxStart = Object.create(null);
   function drawMeleeFx(ox, oy) {
+    const now = performance.now();
+    const seen = new Set();
     for (const m of snapshot.meleeFx || []) {
+      seen.add(m.id);
+      if (!_meleeFxStart[m.id]) _meleeFxStart[m.id] = now;
+      const born = _meleeFxStart[m.id];
       const a = Math.atan2(m.facingY, m.facingX);
       const half = (m.arcDeg * Math.PI / 180) / 2;
       ctx.fillStyle = m.color;
-      ctx.globalAlpha = 0.35;
+      ctx.globalAlpha = 0.32;
       ctx.beginPath();
       ctx.moveTo(ox + m.x, oy + m.y);
       ctx.arc(ox + m.x, oy + m.y, m.range, a - half, a + half);
       ctx.closePath();
       ctx.fill();
+      // Sword-swipe arc that sweeps across the cone over ~250ms.
+      const t = Math.max(0, Math.min(1, (now - born) / 250));
+      const swing = -half + t * (2 * half);
+      ctx.globalAlpha = 0.9 * (1 - t);
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(ox + m.x, oy + m.y, m.range * 0.85, a + swing - 0.18, a + swing + 0.18);
+      ctx.stroke();
+      ctx.strokeStyle = m.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(ox + m.x, oy + m.y, m.range * 0.95, a + swing - 0.10, a + swing + 0.10);
+      ctx.stroke();
       ctx.globalAlpha = 1;
     }
+    for (const k in _meleeFxStart) if (!seen.has(k)) delete _meleeFxStart[k];
   }
 
   function drawProjectiles(ox, oy) {
@@ -987,10 +1008,21 @@
       addKillRow(killer, victim);
       SFX.death();
       if (e.pid === myPid) {
+        const killerName = (killer && killer.username) || e.byName || 'someone';
+        const isSelfKill = e.by === e.pid || !e.by;
+        const powerBit = e.byPower ? ` with ${e.byPower}` : '';
         if (e.eliminated) {
-          showBanner('You\'re out — spectating until next round', 4000);
+          const reason = isSelfKill
+            ? "You're out \u2014 spectating until next round"
+            : `Defeated by ${killerName}${powerBit} \u2014 you're out`;
+          showBanner(reason, 4500);
         } else if (typeof e.livesRemaining === 'number') {
-          showBanner(`You died — ${e.livesRemaining} ${e.livesRemaining === 1 ? 'life' : 'lives'} left`, 1600);
+          const lives = e.livesRemaining;
+          const livesBit = `${lives} ${lives === 1 ? 'life' : 'lives'} left`;
+          const msg = isSelfKill
+            ? `You died \u2014 ${livesBit}`
+            : `Defeated by ${killerName}${powerBit} \u2014 ${livesBit}`;
+          showBanner(msg, 3500);
         }
       }
     } else if (e.kind === 'flag_pickup') {
@@ -1199,20 +1231,88 @@
       ctx.restore();
     }
     const flags = snapshot.flags || [];
+    const t2 = performance.now() / 1000;
     for (const f of flags) {
       const color = f.team === 1 ? '#5dd6ff' : '#ff7a7a';
-      // Flag itself (a triangle on a pole).
       const fx = ox + f.x, fy = oy + f.y;
-      ctx.strokeStyle = '#e7e9f3';
+      // Pulsing glow ring to draw the eye.
+      const pulse = 18 + 6 * Math.sin(t2 * 4 + (f.team === 1 ? 0 : 1.5));
+      ctx.save();
+      ctx.globalAlpha = 0.30;
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.arc(fx, fy - 6, pulse, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 0.55;
+      ctx.strokeStyle = color;
       ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(fx, fy - 22); ctx.lineTo(fx, fy + 6); ctx.stroke();
+      ctx.beginPath(); ctx.arc(fx, fy - 6, pulse + 4, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+      // Flag itself (a triangle on a pole, now bigger).
+      ctx.strokeStyle = '#e7e9f3';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(fx, fy - 30); ctx.lineTo(fx, fy + 8); ctx.stroke();
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.moveTo(fx, fy - 22);
-      ctx.lineTo(fx + 16, fy - 16);
-      ctx.lineTo(fx, fy - 10);
+      ctx.moveTo(fx, fy - 30);
+      ctx.lineTo(fx + 22, fy - 22);
+      ctx.lineTo(fx, fy - 14);
       ctx.closePath(); ctx.fill();
+      // Label.
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 11px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(f.team === 1 ? 'BLUE' : 'RED', fx + 11, fy - 24);
+      // Off-screen arrow.
+      const w = canvas.clientWidth || canvas.width;
+      const h = canvas.clientHeight || canvas.height;
+      if (fx < 0 || fx > w || fy < 0 || fy > h) {
+        const cxv = w / 2, cyv = h / 2;
+        let dx = fx - cxv, dy = fy - cyv;
+        const m = Math.hypot(dx, dy) || 1;
+        dx /= m; dy /= m;
+        const pad = 40;
+        const ex = Math.max(pad, Math.min(w - pad, cxv + dx * (Math.min(w, h) / 2 - pad)));
+        const ey = Math.max(pad, Math.min(h - pad, cyv + dy * (Math.min(w, h) / 2 - pad)));
+        ctx.save();
+        ctx.translate(ex, ey);
+        ctx.rotate(Math.atan2(dy, dx));
+        ctx.fillStyle = color;
+        ctx.globalAlpha = 0.9;
+        ctx.beginPath();
+        ctx.moveTo(14, 0); ctx.lineTo(-8, -10); ctx.lineTo(-8, 10);
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+      }
     }
+  }
+
+  function drawLeaderboard() {
+    let lb = document.getElementById('inGameLb');
+    if (!lb) {
+      lb = document.createElement('div');
+      lb.id = 'inGameLb';
+      lb.style.cssText = 'position:absolute;top:48px;right:10px;min-width:170px;'
+        + 'background:rgba(12,14,22,0.72);border:1px solid rgba(255,255,255,0.08);'
+        + 'border-radius:8px;padding:8px 10px;font:12px system-ui,sans-serif;'
+        + 'color:#e7e9f3;pointer-events:none;z-index:5;';
+      const wrap = document.getElementById('stage') || canvas.parentNode || document.body;
+      if (getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
+      wrap.appendChild(lb);
+    }
+    const ps = (snapshot.players || [])
+      .filter(p => !p.eliminated)
+      .slice()
+      .sort((a, b) => (b.kills - b.deaths) - (a.kills - a.deaths) || b.kills - a.kills)
+      .slice(0, 5);
+    if (!ps.length) { lb.style.display = 'none'; return; }
+    lb.style.display = 'block';
+    const rows = ps.map((p, i) => {
+      const mine = p.pid === myPid ? 'font-weight:600;color:#ffd86b;' : '';
+      const name = escapeHtml(p.username).slice(0, 14);
+      return `<div style="display:flex;justify-content:space-between;gap:8px;${mine}">`
+        + `<span>${i + 1}. <span style="color:${p.color}">\u25cf</span> ${name}</span>`
+        + `<span>${p.kills}/${p.deaths}</span></div>`;
+    }).join('');
+    lb.innerHTML = `<div style="color:#9aa;font-size:11px;letter-spacing:.05em;margin-bottom:4px;">LEADERBOARD</div>${rows}`;
   }
 
   function loop() {
@@ -1228,6 +1328,7 @@
     drawFloaters(ox, oy);
     drawMinimap();
     drawMatchHud();
+    drawLeaderboard();
     updatePlayerCard(me);
     updateHotbar(me);
     requestAnimationFrame(loop);

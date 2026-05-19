@@ -5,18 +5,18 @@ def build_character():
     fireball = {
         "name": "Fireball",
         "key": "space",
-        "cooldownMs": 700,
+        "cooldownMs": 1100,
         "cast": {
             "kind": "projectile",
             "color": "orange",
-            "speed": 600,
-            "radius": 8,
-            "lifetimeMs": 1200,
-            "count": 3,
-            "spreadDeg": 22,
+            "speed": 480,
+            "radius": 7,
+            "lifetimeMs": 1100,
+            "count": 2,
+            "spreadDeg": 18,
             "onHit": [
-                {"effect": "damage", "amount": 14},
-                {"effect": "dot", "dps": 12, "durationMs": 1500},
+                {"effect": "damage", "amount": 9},
+                {"effect": "dot", "dps": 6, "durationMs": 1500},
             ],
         },
     }
@@ -24,15 +24,15 @@ def build_character():
     firewall = {
         "name": "Firewall",
         "key": "q",
-        "cooldownMs": 6000,
+        "cooldownMs": 9000,
         "cast": {
             "kind": "area",
             "color": "red",
-            "radius": 90,
-            "durationMs": 4000,
-            "tickIntervalMs": 300,
+            "radius": 75,
+            "durationMs": 3500,
+            "tickIntervalMs": 400,
             "followOwner": False,
-            "onTick": [{"effect": "damage", "amount": 6}],
+            "onTick": [{"effect": "damage", "amount": 4}],
         },
     }
 

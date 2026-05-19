@@ -395,6 +395,13 @@ def _nearest_ally(game: GameState, me) -> Any:
 
 def _pick_target(game: GameState, me, st: dict) -> Any:
     """Focus-fire: prefer current target if still valid + low HP, else lowest HP in range."""
+    # Hunt-mode override: lock onto the configured target if alive.
+    hunt_pid = getattr(game, "bot_hunt_pid", "") or ""
+    if hunt_pid:
+        hp = game.players.get(hunt_pid)
+        if hp is not None and hp.alive and not hp.eliminated and hp.pid != me.pid:
+            st["target_pid"] = hp.pid
+            return hp
     candidates = []
     for other in game.players.values():
         if other.pid == me.pid or not other.alive or other.eliminated:
@@ -806,6 +813,9 @@ class LiveBotSwarm:
         self._task: asyncio.Task | None = None
         self._pids: list[str] = []
         self._rng = random.Random(0)
+        # Optional hunt target — when set, every bot prioritises this pid.
+        if not hasattr(game, "bot_hunt_pid"):
+            game.bot_hunt_pid = ""
 
     @property
     def running(self) -> bool:
@@ -815,9 +825,18 @@ class LiveBotSwarm:
     def count(self) -> int:
         return sum(1 for pid in self._pids if pid in self.game.players)
 
-    def spawn(self) -> int:
-        """Add all bots to the game. Returns the number spawned."""
-        for spec in BOT_MANIFESTS:
+    def spawn(self, count: int | None = None) -> int:
+        """Add bots to the game. Returns the number spawned.
+
+        If ``count`` is given, draws that many manifests (cycling if needed).
+        Otherwise spawns the full BOT_MANIFESTS roster.
+        """
+        if count is None:
+            specs = list(BOT_MANIFESTS)
+        else:
+            count = max(1, min(int(count), 40))
+            specs = [BOT_MANIFESTS[i % len(BOT_MANIFESTS)] for i in range(count)]
+        for spec in specs:
             manifest = CharacterManifest.model_validate(spec)
             p = self.game.add_player(self.BOT_PREFIX + spec["characterName"], manifest)
             self._pids.append(p.pid)
@@ -896,4 +915,5 @@ class LiveBotSwarm:
             except (asyncio.CancelledError, Exception):
                 pass
             self._task = None
+        self.game.bot_hunt_pid = ""
         return self.remove()

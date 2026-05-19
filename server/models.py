@@ -29,19 +29,19 @@ from pydantic import BaseModel, Field, field_validator
 NAME_MAX_LEN = 24
 
 MAX_HEALTH_RANGE = (10, 300)
-SIZE_RANGE = (8, 60)
+SIZE_RANGE = (12, 60)                  # min raised: tiny hitboxes were too strong
 SPEED_RANGE = (40, 500)
 
-DAMAGE_RANGE = (1, 60)
+DAMAGE_RANGE = (1, 60)                 # cap unchanged — balance.py prices it harder
 HEAL_RANGE = (1, 80)
 SLOW_FACTOR_RANGE = (0.1, 0.95)        # multiplier on movement speed
 STATUS_DURATION_RANGE_MS = (100, 6000)
 STUN_DURATION_RANGE_MS = (100, 2000)
 KNOCKBACK_RANGE = (50, 600)
-DOT_DPS_RANGE = (1, 30)
+DOT_DPS_RANGE = (1, 15)                # was 30 — 30dps stacked melted everything
 
 COOLDOWN_RANGE_MS = (150, 15_000)
-PROJECTILE_SPEED_RANGE = (50, 900)
+PROJECTILE_SPEED_RANGE = (50, 700)     # was 900 — fireball-speed got insane
 PROJECTILE_RADIUS_RANGE = (2, 30)
 PROJECTILE_LIFETIME_RANGE_MS = (200, 5000)
 PROJECTILE_COUNT_RANGE = (1, 6)
@@ -57,7 +57,7 @@ DASH_DURATION_RANGE_MS = (80, 600)
 SHIELD_AMOUNT_RANGE = (5, 200)
 SHIELD_DURATION_RANGE_MS = (200, 8000)
 
-MELEE_RANGE_RANGE = (20, 140)
+MELEE_RANGE_RANGE = (20, 200)          # was 140 — backstab needed more reach
 MELEE_ARC_RANGE_DEG = (30.0, 180.0)
 
 MAX_POWERS = 4
