@@ -27,7 +27,7 @@ slower to load. 32 is plenty for a small fighter.)
 Draw your character facing **down**. Keep the background empty (the
 checkerboard pattern means "transparent").
 
-## Step 4 — Add 3 more walk frames
+## Step 4 — Add 3 more frames
 
 On the left side, click **Add new frame** (the **+** at the bottom of
 the frame list).
@@ -43,7 +43,7 @@ edit it a little. Click **▶ Play** at the top to preview the animation.
 
 ## Step 5 — Export as a .c file
 
-1. Click **Export** in the top bar.
+1. Click **Export** in the side bar.
 2. Pick the **Other** tab.
 3. Click **Download C file** (it makes a file like `mySprite.c`).
 4. Save it somewhere you can find it.
