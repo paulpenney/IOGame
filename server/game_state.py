@@ -305,12 +305,10 @@ class GameState:
             angle = _r.uniform(0.0, 2 * math.pi)
             dist = r * _r.uniform(0.2, 1.0)
             return cx + math.cos(angle) * dist, cy + math.sin(angle) * dist
-        # FFA: pick a random point on a wide ring around centre, with jitter.
-        cx, cy = self.width / 2, self.height / 2
-        ring = min(self.width, self.height) * 0.32
-        angle = _r.uniform(0.0, 2 * math.pi)
-        dist = ring * _r.uniform(0.3, 1.0)
-        return cx + math.cos(angle) * dist, cy + math.sin(angle) * dist
+        # FFA: anywhere on the map, keeping a small margin from the edges.
+        margin = min(self.width, self.height) * 0.05
+        return (_r.uniform(margin, self.width - margin),
+                _r.uniform(margin, self.height - margin))
 
     # --- inputs -----------------------------------------------------------
 
