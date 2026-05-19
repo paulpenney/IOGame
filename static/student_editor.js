@@ -44,14 +44,16 @@
   usernameEl.addEventListener('input', persist);
 
   // ---- Sprite import widget ------------------------------------------------
-  const spriteSlot = document.getElementById('spriteSlot');
+  // Simplified flow: student exports a .c file from PiskelApp and uploads it
+  // here. We always insert as the "walk" animation — no slot picker, no
+  // PNG/GIF support.
   const spriteFile = document.getElementById('spriteFile');
   const spriteOut = document.getElementById('spriteOut');
   const spritePreview = document.getElementById('spritePreview');
   const spriteCopyBtn = document.getElementById('spriteCopyBtn');
   const spriteInsertBtn = document.getElementById('spriteInsertBtn');
+  const SPRITE_SLOT = 'walk';
   let lastSnippet = '';
-  let lastSlot = 'walk';
   let lastFrames = []; // array of data URIs
 
   function showPreview(uris) {
@@ -63,24 +65,23 @@
       const img = document.createElement('img');
       img.src = u;
       img.className = 'sprite-thumb';
-      // Show pixel art crisp.
       img.style.imageRendering = 'pixelated';
       spritePreview.appendChild(img);
     }
   }
-  function buildPythonSnippet(slot, uris) {
+  function buildPythonSnippet(uris) {
     const lines = uris.map(u => `        "${u}",`).join('\n');
     return `# Add inside your build_character() return dict:
 "sprites": {
-    "${slot}": [
+    "${SPRITE_SLOT}": [
 ${lines}
     ],
 },`;
   }
-  function setSnippet(slot, uris) {
-    lastSlot = slot;
+  function setSnippet(uris) {
     lastFrames = uris.slice();
-    lastSnippet = buildPythonSnippet(slot, uris);
+    lastSnippet = buildPythonSnippet(uris);
+    spriteOut.hidden = false;
     spriteOut.textContent = lastSnippet;
     showPreview(uris);
     spriteCopyBtn.disabled = false;
@@ -136,39 +137,24 @@ ${lines}
       const files = Array.from(spriteFile.files || []);
       if (!files.length) return;
       try {
-        // Single .c file? -> walk animation, all frames.
-        const cFile = files.find(f => f.name.toLowerCase().endsWith('.c'));
-        if (cFile) {
-          const text = await cFile.text();
-          const { frames } = parsePiskelC(text);
-          if (frames.length === 0) throw new Error('no frames in .c file');
-          // Cap at 4 (server-side limit).
-          const trimmed = frames.slice(0, 4);
-          // Sanity-check size budget.
-          const total = trimmed.reduce((n, u) => n + u.length, 0);
-          if (total > 64 * 1024) {
-            throw new Error(`frames total ${(total/1024).toFixed(1)} KB; keep export size small (max 64 KB).`);
-          }
-          setSnippet('walk', trimmed);
-          if (frames.length > 4) {
-            spriteOut.textContent += `\n\n# Note: your .c had ${frames.length} frames; only the first 4 were kept.`;
-          }
-          return;
+        const cFile = files.find(f => f.name.toLowerCase().endsWith('.c')) || files[0];
+        if (!cFile.name.toLowerCase().endsWith('.c')) {
+          throw new Error('Please upload a Piskel .c export.');
         }
-        // Otherwise: PNG/GIF frames into the chosen slot (max 4).
-        const imgs = files.slice(0, 4);
-        const dataURIs = [];
-        for (const f of imgs) {
-          if (!/^image\/(png|gif)$/.test(f.type)) {
-            throw new Error(`${f.name}: must be PNG or GIF (or a .c export)`);
-          }
-          if (f.size > 16 * 1024) {
-            throw new Error(`${f.name} is ${(f.size/1024).toFixed(1)} KB; keep under 16 KB`);
-          }
-          dataURIs.push(await readAsDataURL(f));
+        const text = await cFile.text();
+        const { frames } = parsePiskelC(text);
+        if (frames.length === 0) throw new Error('no frames in .c file');
+        const trimmed = frames.slice(0, 4);
+        const total = trimmed.reduce((n, u) => n + u.length, 0);
+        if (total > 64 * 1024) {
+          throw new Error(`frames total ${(total/1024).toFixed(1)} KB; keep your Piskel canvas small (max 64 KB).`);
         }
-        setSnippet(spriteSlot.value, dataURIs);
+        setSnippet(trimmed);
+        if (frames.length > 4) {
+          spriteOut.textContent += `\n\n# Note: your .c had ${frames.length} frames; only the first 4 were kept.`;
+        }
       } catch (e) {
+        spriteOut.hidden = false;
         spriteOut.textContent = 'Error: ' + (e.message || e);
         showPreview([]);
         spriteCopyBtn.disabled = true;
@@ -192,7 +178,7 @@ ${lines}
         // inside the build_character() return value, OR insert one before the
         // closing brace of the LAST return dict.
         const code = codeEl.value;
-        const slot = lastSlot;
+        const slot = SPRITE_SLOT;
         const slotBlock =
 `        "${slot}": [\n` +
           lastFrames.map(u => `            "${u}",`).join('\n') +

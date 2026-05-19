@@ -62,16 +62,12 @@
         <details class="sprite-import" open>
           <summary>🎨 Pixel art (PiskelApp)</summary>
           <div class="sprite-help">
+            <p style="margin:0 0 6px 0;font-size:12px;color:#9aa;">
+              Export your animation from <a href="https://www.piskelapp.com/" target="_blank" rel="noopener">PiskelApp</a>
+              as a <strong>.c</strong> file, then drop it here. It becomes your walk animation.
+            </p>
             <div class="sprite-row">
-              <label class="sprite-pick">
-                <span>Slot:</span>
-                <select id="spriteSlot">
-                  <option value="walk" selected>walk</option>
-                  <option value="attack">attack</option>
-                  <option value="hurt">hurt</option>
-                </select>
-              </label>
-              <input id="spriteFile" type="file" accept="image/png,image/gif,.c,text/plain" multiple />
+              <input id="spriteFile" type="file" accept=".c,text/plain" />
             </div>
             <div id="spritePreview" class="sprite-preview" hidden></div>
             <pre id="spriteOut" class="sprite-out" hidden></pre>
